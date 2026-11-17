@@ -475,5 +475,6 @@ $("clearLog").onclick=async()=>{roomData.logs=[];await saveBoard()};
 $("sendChat").onclick=async()=>{const t=$("chatText").value.trim();if(!t)return;await push(roomRef("chat"),{name:$("name").value||"プレイヤー",text:t,at:Date.now()});$("chatText").value=""};
 $("chatText").addEventListener("keydown",e=>{if(e.key==="Enter")$("sendChat").click()});
 loadAllCardImages();
+loadLocalDeck();
 </script>
 </body></html>
