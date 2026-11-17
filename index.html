@@ -67,15 +67,6 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 <div class="controls"><button class="primary" id="deckSave">デッキを保存</button><button id="deckLoad">保存デッキを読み込む</button><button id="deckClear" class="danger">デッキを空にする</button><button id="deckShuffle">山札をシャッフル</button><button id="territorySetup">縄張りを設定</button><button id="effectMemo">効果処理メモ</button></div>
 <div class="small muted">カード名は手入力式です。20枚になったら保存して、対戦中に「山札から1枚引く」を使えます。保存デッキはこの端末・ブラウザ内に保存されます。</div>
 </div>
-<div class="panel" id="cardSearchPanel">
-<div class="area-title"><b>蟲神器カード検索</b><span class="small muted">カード一覧・画像を確認</span></div>
-<div class="card-search-tools"><input id="cardSearchWord" placeholder="カード名を入力して検索"><button id="cardSearchButton" class="primary">カードを検索</button><button id="allCardListButton">全カード一覧</button></div>
-<div class="card-search-note">第1弾〜第8弾のカード一覧をここに表示します。カード名で検索するか、全カード一覧を開いてください。対戦盤面の自動画像表示は、登録済みカードから順次拡大します。</div>
-<div id="cardCatalogFrameWrap" class="hidden" style="margin-top:10px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#111b15">
-<div class="row" style="justify-content:space-between;padding:7px"><b id="cardCatalogTitle" class="small">カード一覧</b><button id="closeCardCatalog" type="button">閉じる</button></div>
-<iframe id="cardCatalogFrame" title="蟲神器カード一覧" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" style="display:block;width:100%;height:65vh;min-height:420px;border:0;background:white"></iframe>
-</div>
-</div>
 <div class="area-title"><b>盤面</b><span class="small muted">カードをドラッグ、またはカードの移動先ボタンで操作</span></div>
 <div class="zones">
 <div class="zone" data-zone="p0field"><h3>プレイヤー1：場</h3><div class="cards"></div></div>
@@ -188,7 +179,7 @@ function render(){
  document.querySelectorAll(".zone[data-zone]").forEach(z=>{if(z.dataset.zone==="hand")return;const arr=roomData[z.dataset.zone]||[];z.querySelector(".cards").replaceChildren(...arr.map((c,idx)=>makeCard(c,z.dataset.zone,idx)));});
  $("log").textContent=(roomData.logs||[]).slice(-30).reverse().join("\n");
 }
-const cardImages={
+let cardImages={
   "ニセハナマオウカマキリ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=1.jpg&width=225",
   "リオック": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=2.jpg&width=225",
   "メキシカンレッドニー": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=3.jpg&width=225",
@@ -382,6 +373,24 @@ const cardImages={
   "マダラサソリ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=191.jpg&width=225",
   "ヤエヤマサソリ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=192.jpg&width=225"
 };
+const normalizeCardImageName=name=>String(name||"").normalize("NFKC").replace(/[\\s　]+/g,"").toLowerCase();
+let normalizedCardImages={};
+function rebuildNormalizedCardImages(){
+ normalizedCardImages={};
+ Object.entries(cardImages).forEach(([name,url])=>{normalizedCardImages[normalizeCardImageName(name)]=url;});
+}
+async function loadAllCardImages(){
+ try{
+  const response=await fetch("./card-images.json",{cache:"no-store"});
+  if(!response.ok)return;
+  const extra=await response.json();
+  Object.assign(cardImages,extra);
+  rebuildNormalizedCardImages();
+  render();
+  renderHand();
+ }catch(error){console.warn("カード画像一覧を読み込めませんでした",error);}
+}
+rebuildNormalizedCardImages();
 function makeCard(c,zone,index){
  const el=document.createElement("div");el.className="card";el.draggable=true;el.dataset.zone=zone;el.dataset.index=index;
  const title=document.createElement("b");title.textContent=c.name;
@@ -389,7 +398,7 @@ function makeCard(c,zone,index){
  const actions=document.createElement("div");
  const move=document.createElement("button");move.textContent="移動";move.onclick=()=>chooseMove(zone,index);
  actions.append(move);
- const imageUrl=cardImages[c.name];
+ const imageUrl=cardImages[c.name]||normalizedCardImages[normalizeCardImageName(c.name)];
  if(imageUrl){const img=document.createElement("img");img.src=imageUrl;img.alt=c.name+"のカード画像";img.onerror=()=>{el.classList.remove("has-image");img.remove();el.prepend(title,kind);};el.classList.add("has-image");el.append(img,actions);}
  else{el.append(title,kind,actions);}
  el.addEventListener("dragstart",e=>e.dataTransfer.setData("text/plain",JSON.stringify({zone,index})));
@@ -433,17 +442,6 @@ document.querySelectorAll(".zone").forEach(z=>{
  z.addEventListener("dragleave",()=>z.classList.remove("over"));
  z.addEventListener("drop",e=>{e.preventDefault();z.classList.remove("over");try{const d=JSON.parse(e.dataTransfer.getData("text/plain"));moveCard(d.zone,d.index,z.dataset.zone)}catch{}});
 });
-function showCardCatalog(url,title){
- const wrap=$("cardCatalogFrameWrap");
- $("cardCatalogTitle").textContent=title;
- $("cardCatalogFrame").src=url;
- wrap.classList.remove("hidden");
- wrap.scrollIntoView({behavior:"smooth",block:"start"});
-}
-$("cardSearchButton").onclick=()=>{const q=$("cardSearchWord").value.trim();if(!q)return alert("カード名を入力してください");showCardCatalog("https://mushijingi.com/index.php?keyword="+encodeURIComponent(q),"検索結果："+q);};
-$("allCardListButton").onclick=()=>showCardCatalog("https://mushijingi.com/","第1弾〜第8弾・全カード一覧");
-$("closeCardCatalog").onclick=()=>{$("cardCatalogFrameWrap").classList.add("hidden");$("cardCatalogFrame").src="about:blank";};
-$("cardSearchWord").addEventListener("keydown",e=>{if(e.key==="Enter")$("cardSearchButton").click()});
 $("create").onclick=createRoom;$("join").onclick=joinRoom;
 $("copyRoom").onclick=()=>navigator.clipboard?.writeText(roomId);
 $("addCard").onclick=async()=>{const name=$("cardName").value.trim();if(!name)return;hand.push({name,kind:$("cardKind").value});$("cardName").value="";await set(roomRef("privateHands/"+uid),hand);};
@@ -455,5 +453,6 @@ $("coin").onclick=async()=>{roomData.turn=Math.random()<.5?0:1;roomData.logs=roo
 $("clearLog").onclick=async()=>{roomData.logs=[];await saveBoard()};
 $("sendChat").onclick=async()=>{const t=$("chatText").value.trim();if(!t)return;await push(roomRef("chat"),{name:$("name").value||"プレイヤー",text:t,at:Date.now()});$("chatText").value=""};
 $("chatText").addEventListener("keydown",e=>{if(e.key==="Enter")$("sendChat").click()});
+loadAllCardImages();
 </script>
 </body></html>
