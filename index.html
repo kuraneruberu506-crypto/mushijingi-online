@@ -510,28 +510,42 @@ async function flipCard(from,index,faceDown){
  if(from==="hand")await set(roomRef("privateHands/"+uid),hand);
  else await saveBoard();
 }
+let territoryCollecting=false;
 async function collectTerritoryCard(index){
+ if(territoryCollecting)return;
+ territoryCollecting=true;
  const zone="p"+mySlot+"territory";
  try{
-  const [boardSnap,handSnap,revealSnap]=await Promise.all([
-   get(roomRef("board")),get(roomRef("privateHands/"+uid)),get(roomRef("privateTerritoryReveals/"+uid))
+  const [territorySnap,handSnap,revealSnap]=await Promise.all([
+   get(roomRef("board/"+zone)),get(roomRef("privateHands/"+uid)),get(roomRef("privateTerritoryReveals/"+uid))
   ]);
-  const latestBoard=boardSnap.val()||blankBoard();
-  const territory=Array.isArray(latestBoard[zone])?latestBoard[zone]:[];
-  if(index<0||index>=territory.length){log("ナワバリのカードが見つかりません。画面を更新してください。");return;}
-  const card=territory.splice(index,1)[0];
-  const latestHand=Array.isArray(handSnap.val())?handSnap.val():[];
-  latestHand.push(card);
+  const territory=Array.isArray(territorySnap.val())?territorySnap.val():[];
+  const cardIndex=Number(index);
+  if(!Number.isInteger(cardIndex)||cardIndex<0||cardIndex>=territory.length){
+   log("選択したナワバリのカードが見つかりません。もう一度選択してください。");
+   return;
+  }
+  const nextTerritory=[...territory];
+  const card=nextTerritory.splice(cardIndex,1)[0];
+  const nextHand=Array.isArray(handSnap.val())?[...handSnap.val()]:[];
+  nextHand.push({...card,faceDown:false});
   const reveals=Array.isArray(revealSnap.val())?revealSnap.val():[];
-  const nextReveals=reveals.filter(i=>i!==index).map(i=>i>index?i-1:i);
-  latestBoard.logs=latestBoard.logs||[];
-  latestBoard.logs.push("プレイヤー"+(mySlot+1)+"：ナワバリのカードを表向きにして手札に加えました");
-  await set(roomRef("board"),latestBoard);
-  await set(roomRef("privateHands/"+uid),latestHand);
+  const nextReveals=reveals.filter(i=>Number(i)!==cardIndex).map(i=>Number(i)>cardIndex?Number(i)-1:Number(i));
+  await set(roomRef("privateHands/"+uid),nextHand);
+  await set(roomRef("board/"+zone),nextTerritory);
   await set(roomRef("privateTerritoryReveals/"+uid),nextReveals);
-  roomData=latestBoard;hand=latestHand;privateReveals=nextReveals;
-  render();renderHand();
- }catch(e){log("ナワバリ回収に失敗しました："+(e?.message||String(e)));}
+  hand=nextHand;
+  roomData[zone]=nextTerritory;
+  privateReveals=nextReveals;
+  render();
+  renderHand();
+  log("「"+(card.name||"カード")+"」1枚をナワバリから手札に加えました。");
+ }catch(e){
+  console.error("ナワバリ回収に失敗",e);
+  log("ナワバリ回収に失敗しました："+(e?.message||String(e)));
+ }finally{
+  territoryCollecting=false;
+ }
 }
 async function moveCard(from,index,to){
  if(from===to)return;
