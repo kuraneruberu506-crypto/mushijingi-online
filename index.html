@@ -459,15 +459,26 @@ function chooseMove(from,index){
 }
 async function moveCard(from,index,to){
  if(from===to)return;
+ let moved;
+ let handChanged=false, revealsChanged=false;
  if(from==="hand"){
-  const c=hand.splice(index,1)[0];await set(roomRef("privateHands/"+uid),hand);
-  if(to==="hand")return;roomData[to]=roomData[to]||[];roomData[to].push(c);
+  moved=hand.splice(index,1)[0];if(!moved)return;
+  handChanged=true;
+  roomData[to]=roomData[to]||[];roomData[to].push(moved);
  }else{
-  roomData[from]=roomData[from]||[];const c=roomData[from].splice(index,1)[0];if(!c)return;
-  if(from==="p"+mySlot+"territory"){privateReveals=privateReveals.filter(i=>i!==index).map(i=>i>index?i-1:i);await set(roomRef("privateTerritoryReveals/"+uid),privateReveals);}
-  if(to==="hand"){hand.push(c);await set(roomRef("privateHands/"+uid),hand);}else{roomData[to]=roomData[to]||[];roomData[to].push(c);}
+  roomData[from]=roomData[from]||[];moved=roomData[from].splice(index,1)[0];if(!moved)return;
+  if(from==="p"+mySlot+"territory"){
+   privateReveals=privateReveals.filter(i=>i!==index).map(i=>i>index?i-1:i);
+   revealsChanged=true;
+  }
+  if(to==="hand"){hand.push(moved);handChanged=true;}
+  else{roomData[to]=roomData[to]||[];roomData[to].push(moved);}
  }
  roomData.logs=roomData.logs||[];roomData.logs.push(`プレイヤー${mySlot+1}：カードを移動`);
+ // 端末画面を先に更新し、通信完了を待たずに移動結果を表示する
+ render();renderHand();
+ if(handChanged)await set(roomRef("privateHands/"+uid),hand);
+ if(revealsChanged)await set(roomRef("privateTerritoryReveals/"+uid),privateReveals);
  await saveBoard();
 }
 
