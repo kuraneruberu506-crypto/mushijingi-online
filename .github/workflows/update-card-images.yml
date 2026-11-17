@@ -41,7 +41,7 @@ jobs:
                   alt = unescape(a.get("alt", "")).strip()
                   match = re.search(r"(?:[?&])src=(\d+)\.jpg", src)
                   if match and alt:
-                      name = re.sub(r"^Image:\\s*", "", alt)
+                      name = re.sub(r"^Image:\s*", "", alt)
                       name = re.sub(r"のカード画像$", "", name).strip()
                       if name:
                           self.items.append((name, int(match.group(1))))
@@ -63,7 +63,7 @@ jobs:
 
           with open("card-images.json", "w", encoding="utf-8") as f:
               json.dump(cards, f, ensure_ascii=False, indent=2)
-              f.write("\\n")
+              f.write("\n")
           print(f"Saved {len(cards)} card image mappings.")
           PY
       - name: Commit generated image index
