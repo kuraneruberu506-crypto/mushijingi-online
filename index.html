@@ -453,8 +453,7 @@ function makeCard(c,zone,index){
  const variantKey=String(c.name||"")+"|"+String(c.rarity||"");
  const imageUrl=cardVariantImages[variantKey]||cardImages[c.name]||normalizedCardImages[normalizeCardImageName(c.name)];
  const isTerritory=String(zone).endsWith("territory");
- const isOwnRevealedTerritory=isTerritory&&zone==="p"+mySlot+"territory"&&privateReveals.some(i=>Number(i)===Number(index));
- if(c.faceDown||(isTerritory&&!isOwnRevealedTerritory)){const back=document.createElement("img");back.draggable=false;back.src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg";back.alt="蟲神器カードの裏面";back.onerror=()=>{back.remove();el.classList.remove("has-image");el.style.background="linear-gradient(145deg,#233d30,#101b15 55%,#8b7138)";el.style.border="2px solid #c9a84f";el.style.display="grid";el.style.placeItems="center";el.style.color="#f4df9b";el.style.fontWeight="800";el.textContent="蟲神器";};el.classList.add("has-image","territory-back");el.append(back,actions);}
+ if(c.faceDown||isTerritory){const back=document.createElement("img");back.draggable=false;back.src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg";back.alt="蟲神器カードの裏面";back.onerror=()=>{back.remove();el.classList.remove("has-image");el.style.background="linear-gradient(145deg,#233d30,#101b15 55%,#8b7138)";el.style.border="2px solid #c9a84f";el.style.display="grid";el.style.placeItems="center";el.style.color="#f4df9b";el.style.fontWeight="800";el.textContent="蟲神器";};el.classList.add("has-image","territory-back");el.append(back,actions);}
  else if(imageUrl){const img=document.createElement("img");img.draggable=false;img.src=imageUrl;img.alt=c.name+"のカード画像";img.onerror=()=>{el.classList.remove("has-image");img.remove();el.prepend(title,kind);};el.classList.add("has-image");el.append(img,rarity,actions);}
  else{el.append(title,rarity,kind,actions);}
  if(Array.isArray(c.attachments)&&c.attachments.length){const attached=document.createElement("div");attached.className="attached-cards";attached.textContent="強化："+c.attachments.map(x=>x.name).join("、");Object.assign(attached.style,{fontSize:"11px",padding:"4px",marginTop:"4px",background:"rgba(245,215,110,.18)",borderRadius:"5px",whiteSpace:"normal"});el.append(attached);}
@@ -491,16 +490,16 @@ function chooseAttachTarget(handIndex){
 function chooseMove(from,index){
  const opts=mySlot===0?["p0field","p0territory","p0grave","p0mana","hand"]:["p1field","p1territory","p1grave","p1mana","hand"];
  if(from==="hand")opts.push("deckBottom");
- if(from==="p"+mySlot+"territory"){opts.push("revealPrivate");opts.push("revealAndHand");}
+ if(from==="p"+mySlot+"territory")opts.splice(opts.indexOf("hand"),1,"revealAndHand");
  const currentCard=from==="hand"?hand[index]:(roomData[from]||[])[index];
  if(currentCard)opts.push(currentCard.faceDown?"turnFaceUp":"turnFaceDown");
- const labels={p0field:"自分の場",p0territory:"自分のナワバリ",p0grave:"自分の捨て札",p0mana:"自分の餌場",p1field:"相手の場",p1territory:"相手のナワバリ",p1grave:"相手の捨て札",p1mana:"相手の餌場",hand:"自分の手札",deckBottom:"山札の一番下に置く",revealPrivate:"表向きにする（自分の画面だけ）",revealAndHand:"自分だけ表向きにして手札に加える",turnFaceDown:"裏向きにする",turnFaceUp:"表向きにする"};
+ const labels={p0field:"自分の場",p0territory:"自分のナワバリ",p0grave:"自分の捨て札",p0mana:"自分の餌場",p1field:"相手の場",p1territory:"相手のナワバリ",p1grave:"相手の捨て札",p1mana:"相手の餌場",hand:"自分の手札",deckBottom:"山札の一番下に置く",revealAndHand:"自分だけ表向きにして手札に加える",turnFaceDown:"裏向きにする",turnFaceUp:"表向きにする"};
  const old=document.getElementById("movePicker");if(old)old.remove();
  const picker=document.createElement("div");picker.id="movePicker";
  Object.assign(picker.style,{position:"fixed",inset:"0",zIndex:"9999",background:"rgba(0,0,0,.72)",display:"flex",alignItems:"center",justifyContent:"center",padding:"18px"});
  const panel=document.createElement("div");Object.assign(panel.style,{background:"#173b2b",border:"1px solid #6b9b7b",borderRadius:"14px",padding:"18px",width:"min(100%,360px)",maxHeight:"80vh",overflowY:"auto",color:"#fff"});
  const heading=document.createElement("h3");heading.textContent="移動先を選択";panel.append(heading);
- opts.forEach(dest=>{const b=document.createElement("button");b.type="button";b.textContent=labels[dest];Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",whiteSpace:"normal",textAlign:"left"});b.onclick=async()=>{picker.remove();if(dest==="revealPrivate"){if(!privateReveals.some(i=>Number(i)===Number(index))){privateReveals.push(index);await set(roomRef("privateTerritoryReveals/"+uid),privateReveals);render();}}else if(dest==="revealAndHand"||(dest==="hand"&&from==="p"+mySlot+"territory")){await collectTerritoryCard(index);}else if(dest==="turnFaceDown"||dest==="turnFaceUp")flipCard(from,index,dest==="turnFaceDown");else moveCard(from,index,dest);};panel.append(b);});
+ opts.forEach(dest=>{const b=document.createElement("button");b.type="button";b.textContent=labels[dest];Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",whiteSpace:"normal",textAlign:"left"});b.onclick=async()=>{picker.remove();if(dest==="revealAndHand"){await collectTerritoryCard(index);}else if(dest==="turnFaceDown"||dest==="turnFaceUp")flipCard(from,index,dest==="turnFaceDown");else moveCard(from,index,dest);};panel.append(b);});
  const cancel=document.createElement("button");cancel.type="button";cancel.textContent="キャンセル";cancel.style.width="100%";cancel.onclick=()=>picker.remove();panel.append(cancel);picker.append(panel);picker.addEventListener("click",e=>{if(e.target===picker)picker.remove();});document.body.append(picker);
 }
 async function flipCard(from,index,faceDown){
@@ -517,8 +516,8 @@ async function collectTerritoryCard(index){
  territoryCollecting=true;
  const zone="p"+mySlot+"territory";
  try{
-  const [territorySnap,handSnap,revealSnap]=await Promise.all([
-   get(roomRef("board/"+zone)),get(roomRef("privateHands/"+uid)),get(roomRef("privateTerritoryReveals/"+uid))
+  const [territorySnap,handSnap]=await Promise.all([
+   get(roomRef("board/"+zone)),get(roomRef("privateHands/"+uid))
   ]);
   const territory=asCardArray(territorySnap.val());
   const cardIndex=Number(index);
@@ -529,7 +528,6 @@ async function collectTerritoryCard(index){
   const card=territory[cardIndex];
   const nextHand=asCardArray(handSnap.val());
   nextHand.push({...card,faceDown:false});
-  // 先に手札へ保存し、成功後にナワバリから対象1枚だけをトランザクションで取り除く。
   await set(roomRef("privateHands/"+uid),nextHand);
   const result=await runTransaction(roomRef("board/"+zone),current=>{
    const currentCards=asCardArray(current);
@@ -542,13 +540,9 @@ async function collectTerritoryCard(index){
    log("ナワバリの更新に失敗しました。もう一度お試しください。");
    return;
   }
-  const latestTerritory=asCardArray(result.snapshot.val());
-  const reveals=asCardArray(revealSnap.val());
-  const nextReveals=reveals.filter(i=>Number(i)!==cardIndex).map(i=>Number(i)>cardIndex?Number(i)-1:Number(i));
-  await set(roomRef("privateTerritoryReveals/"+uid),nextReveals);
   hand=nextHand;
-  roomData[zone]=latestTerritory;
-  privateReveals=nextReveals;
+  roomData[zone]=asCardArray(result.snapshot.val());
+  privateReveals=[];
   render();
   renderHand();
   log("「"+(card.name||"カード")+"」1枚をナワバリから手札に加えました。");
@@ -577,6 +571,7 @@ async function moveCard(from,index,to){
     if(!Number.isInteger(cardIndex)||cardIndex<0||cardIndex>=source.length)return;
     const moved=source.splice(cardIndex,1)[0];
     if(!moved)return;
+    moved.faceDown=false;
     target.push(moved);
     current[from]=source;
     current[to]=target;
@@ -584,10 +579,7 @@ async function moveCard(from,index,to){
    });
    if(!result.committed){log("カードの移動が反映されませんでした。もう一度お試しください。");return;}
    const latest=result.snapshot.val()||blankBoard();
-   if(from==="p"+mySlot+"territory"){
-    privateReveals=privateReveals.filter(i=>Number(i)!==Number(index)).map(i=>Number(i)>Number(index)?Number(i)-1:Number(i));
-    await set(roomRef("privateTerritoryReveals/"+uid),privateReveals);
-   }
+   if(from==="p"+mySlot+"territory")privateReveals=[];
    roomData=latest;
    render();renderHand();
    return;
@@ -619,6 +611,7 @@ async function moveCard(from,index,to){
     moved.faceDown=false;
     latestHand.push(moved);
    }else{
+    moved.faceDown=false;
     latestBoard[to]=asCardArray(latestBoard[to]);
     latestBoard[to].push(moved);
    }
