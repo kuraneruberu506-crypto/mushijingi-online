@@ -478,8 +478,9 @@ function renderHand(){
 }
 function chooseMove(from,index){
  const opts=mySlot===0?["p0field","p0territory","p0grave","p0mana","hand"]:["p1field","p1territory","p1grave","p1mana","hand"];
+ if(from==="hand")opts.push("deckBottom");
  if(from==="p"+mySlot+"territory")opts.push("revealToHand");
- const labels={p0field:"自分の場",p0territory:"自分のナワバリ",p0grave:"自分の捨て札",p0mana:"自分の餌場",p1field:"相手の場",p1territory:"相手のナワバリ",p1grave:"相手の捨て札",p1mana:"相手の餌場",hand:"自分の手札",revealToHand:"表向きにして手札に加える（自分だけに表示）"};
+ const labels={p0field:"自分の場",p0territory:"自分のナワバリ",p0grave:"自分の捨て札",p0mana:"自分の餌場",p1field:"相手の場",p1territory:"相手のナワバリ",p1grave:"相手の捨て札",p1mana:"相手の餌場",hand:"自分の手札",deckBottom:"山札の一番下に置く",revealToHand:"表向きにして手札に加える（自分だけに表示）"};
  const old=document.getElementById("movePicker");if(old)old.remove();
  const picker=document.createElement("div");picker.id="movePicker";
  Object.assign(picker.style,{position:"fixed",inset:"0",zIndex:"9999",background:"rgba(0,0,0,.72)",display:"flex",alignItems:"center",justifyContent:"center",padding:"18px"});
@@ -515,6 +516,11 @@ async function collectTerritoryCard(index){
 }
 async function moveCard(from,index,to){
  if(from===to)return;
+ if(from==="hand"&&to==="deckBottom"){
+  const moved=hand.splice(index,1)[0];if(!moved)return;
+  deckCards.push(moved);roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=deckCards.length;
+  render();renderHand();await set(roomRef("privateHands/"+uid),hand);await saveBoard();return;
+ }
  let moved;
  let handChanged=false, revealsChanged=false;
  if(from==="hand"){
