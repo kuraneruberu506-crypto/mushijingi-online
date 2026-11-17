@@ -64,7 +64,7 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 <div class="row"><input id="deckCardName" class="grow" placeholder="カード名を入力" maxlength="35"><select id="deckCardKind" style="background:#111b15;color:white;border:1px solid var(--line);border-radius:9px;padding:9px"><option>虫</option><option>術</option><option>強化</option><option>その他</option></select><button id="deckAdd">デッキに追加</button></div>
 <div class="row"><input id="deckSearch" class="grow" placeholder="デッキ内のカードを検索"><span class="deckstatus" id="deckCount">0 / 20枚</span></div>
 <div id="deckList" class="decklist"></div>
-<div class="controls"><button class="primary" id="deckSave">デッキを保存</button><button id="deckLoad">保存デッキを読み込む</button><button id="deckClear" class="danger">デッキを空にする</button><button id="deckShuffle">山札をシャッフル</button><button id="territorySetup">縄張りを設定</button></div>
+<div class="controls"><button class="primary" id="deckSave">デッキを保存</button><button id="deckLoad">保存デッキを読み込む</button><button id="deckClear" class="danger">デッキを空にする</button><button id="deckShuffle">山札をシャッフル</button><button id="territorySetup">縄張りを設定</button><button id="effectMemo">効果処理メモ</button></div>
 <div class="small muted">カード名は手入力式です。20枚になったら保存して、対戦中に「山札から1枚引く」を使えます。保存デッキはこの端末・ブラウザ内に保存されます。</div>
 </div>
 <div class="area-title"><b>盤面</b><span class="small muted">カードをドラッグ、またはカードの移動先ボタンで操作</span></div>
@@ -216,6 +216,7 @@ $("deckLoad").onclick=()=>{try{const a=JSON.parse(localStorage.getItem(deckStora
 $("deckClear").onclick=()=>{if(!confirm("デッキを空にしますか？"))return;deckCards=[];deckReady=false;saveLocalDeck();renderDeck();};
 $("deckShuffle").onclick=()=>{if(!deckReady||deckCards.length!==20)return alert("先に20枚デッキを保存してください");for(let i=deckCards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deckCards[i],deckCards[j]]=[deckCards[j],deckCards[i]];}saveLocalDeck();log("自分の山札をシャッフルしました");};
 $("territorySetup").onclick=async()=>{if(!deckReady||deckCards.length===0)return alert("先にデッキを読み込んでください");const raw=prompt("縄張りに置く枚数を入力してください","4");if(raw===null)return;const n=Number(raw);if(!Number.isInteger(n)||n<1||n>deckCards.length)return alert("山札にある枚数以内の整数を入力してください");const zone="p"+mySlot+"territory";roomData[zone]=roomData[zone]||[];for(let i=0;i<n;i++)roomData[zone].push(deckCards.shift());roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=deckCards.length;saveLocalDeck();await saveBoard();log("縄張りを"+n+"枚設定しました");};
+$("effectMemo").onclick=()=>{const note=prompt("処理した効果や内容を入力してください");if(!note)return;roomData.logs=roomData.logs||[];roomData.logs.push("効果メモ："+note);saveBoard();};
 \ndocument.querySelectorAll(".zone").forEach(z=>{
  z.addEventListener("dragover",e=>{e.preventDefault();z.classList.add("over")});
  z.addEventListener("dragleave",()=>z.classList.remove("over"));
