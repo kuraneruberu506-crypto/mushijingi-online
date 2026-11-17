@@ -31,7 +31,7 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 #log{max-height:150px;overflow:auto;font-size:12px;color:var(--muted);white-space:pre-wrap}
 #chatlog{height:100px;overflow:auto;background:#111b15;border-radius:8px;padding:8px;font-size:12px}
 @media(max-width:700px){main{padding:9px}.zones{grid-template-columns:repeat(2,1fr)}.boardtop{grid-template-columns:1fr 1fr}.boardtop .center{grid-column:1/-1;grid-row:1}.card{width:68px;min-height:88px}.lobby-grid{grid-template-columns:1fr}header{padding:12px}}
-.decktools{display:grid;gap:10px}.decklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:240px;overflow:auto}.deckitem{display:flex;justify-content:space-between;align-items:center;gap:6px;background:#111b15;border:1px solid var(--line);border-radius:8px;padding:7px;font-size:12px}.deckitem button{padding:4px 7px;font-size:11px}.deckstatus{font-weight:700;color:var(--gold)}
+.card-search-tools{display:flex;gap:8px;flex-wrap:wrap}.card-search-tools input{flex:1;min-width:140px}.card-search-note{font-size:12px;color:var(--muted);line-height:1.6}.decktools{display:grid;gap:10px}.decklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:240px;overflow:auto}.deckitem{display:flex;justify-content:space-between;align-items:center;gap:6px;background:#111b15;border:1px solid var(--line);border-radius:8px;padding:7px;font-size:12px}.deckitem button{padding:4px 7px;font-size:11px}.deckstatus{font-weight:700;color:var(--gold)}
 </style>
 </head>
 <body>
@@ -66,6 +66,11 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 <div id="deckList" class="decklist"></div>
 <div class="controls"><button class="primary" id="deckSave">デッキを保存</button><button id="deckLoad">保存デッキを読み込む</button><button id="deckClear" class="danger">デッキを空にする</button><button id="deckShuffle">山札をシャッフル</button><button id="territorySetup">縄張りを設定</button><button id="effectMemo">効果処理メモ</button></div>
 <div class="small muted">カード名は手入力式です。20枚になったら保存して、対戦中に「山札から1枚引く」を使えます。保存デッキはこの端末・ブラウザ内に保存されます。</div>
+</div>
+<div class="panel" id="cardSearchPanel">
+<div class="area-title"><b>蟲神器カード検索</b><span class="small muted">カード一覧・画像を確認</span></div>
+<div class="card-search-tools"><input id="cardSearchWord" placeholder="カード名を入力して検索"><button id="cardSearchButton" class="primary">カードを検索</button><button id="allCardListButton">全カード一覧</button></div>
+<div class="card-search-note">カード画像は、利用許可を得たカード検索サイトの画像を参照しています。現在、対戦盤面で自動表示できる画像は第1弾の一部（1〜64番）です。検索ボタンから全カードの画像・情報を確認できます。</div>
 </div>
 <div class="area-title"><b>盤面</b><span class="small muted">カードをドラッグ、またはカードの移動先ボタンで操作</span></div>
 <div class="zones">
@@ -180,8 +185,70 @@ function render(){
  $("log").textContent=(roomData.logs||[]).slice(-30).reverse().join("\n");
 }
 const cardImages={
- "ニセハナマオウカマキリ":"https://mushijingi.com/images/card/thumbnail.php?height=300&src=1.jpg&width=225",
- "リオック":"https://mushijingi.com/images/card/thumbnail.php?height=300&src=2.jpg&width=225"
+  "ニセハナマオウカマキリ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=1.jpg&width=225",
+  "リオック": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=2.jpg&width=225",
+  "メキシカンレッドニー": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=3.jpg&width=225",
+  "オニヤンマ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=4.jpg&width=225",
+  "トビズムカデ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=5.jpg&width=225",
+  "ギンヤンマ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=6.jpg&width=225",
+  "オオカマキリ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=7.jpg&width=225",
+  "オオスズメバチ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=8.jpg&width=225",
+  "ヤブキリ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=9.jpg&width=225",
+  "ミイデラゴミムシ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=10.jpg&width=225",
+  "コオニヤンマ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=11.jpg&width=225",
+  "チョウセンカマキリ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=12.jpg&width=225",
+  "シオヤアブ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=13.jpg&width=225",
+  "デスストーカー": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=14.jpg&width=225",
+  "アリジゴク": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=15.jpg&width=225",
+  "キリギリス": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=16.jpg&width=225",
+  "マイマイカブリ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=17.jpg&width=225",
+  "コガネグモ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=18.jpg&width=225",
+  "オニグモ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=19.jpg&width=225",
+  "ハラビロカマキリ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=20.jpg&width=225",
+  "ヒアリ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=21.jpg&width=225",
+  "セアカゴケグモ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=22.jpg&width=225",
+  "クロシデムシ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=23.jpg&width=225",
+  "アキアカネ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=24.jpg&width=225",
+  "シオカラトンボ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=25.jpg&width=225",
+  "ハンミョウ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=26.jpg&width=225",
+  "ミツツボアリ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=27.jpg&width=225",
+  "ナナホシテントウ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=28.jpg&width=225",
+  "クロヤマアリ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=29.jpg&width=225",
+  "ナミテントウ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=30.jpg&width=225",
+  "ハナグモ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=31.jpg&width=225",
+  "コカマキリ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=32.jpg&width=225",
+  "クロオオアリ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=33.jpg&width=225",
+  "ヘラクレスオオカブト": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=34.jpg&width=225",
+  "コーカサスオオカブト": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=35.jpg&width=225",
+  "ミヤマクワガタ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=36.jpg&width=225",
+  "ゴライアスオオツノハナムグリ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=37.jpg&width=225",
+  "ギラファノコギリクワガタ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=38.jpg&width=225",
+  "ニシキオオツバメガ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=39.jpg&width=225",
+  "カブトムシ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=40.jpg&width=225",
+  "オオクワガタ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=41.jpg&width=225",
+  "オオムラサキ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=42.jpg&width=225",
+  "ヒラタクワガタ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=43.jpg&width=225",
+  "ナミアゲハ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=44.jpg&width=225",
+  "アオスジアゲハ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=45.jpg&width=225",
+  "ノコギリクワガタ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=46.jpg&width=225",
+  "ミンミンゼミ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=47.jpg&width=225",
+  "クロアゲハ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=48.jpg&width=225",
+  "オオゾウムシ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=49.jpg&width=225",
+  "オオスカシバ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=50.jpg&width=225",
+  "ヤエヤママルバネクワガタ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=51.jpg&width=225",
+  "クマゼミ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=52.jpg&width=225",
+  "セイヨウミツバチ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=53.jpg&width=225",
+  "キムネクマバチ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=54.jpg&width=225",
+  "コクワガタ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=55.jpg&width=225",
+  "アブラゼミ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=56.jpg&width=225",
+  "アカタテハ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=57.jpg&width=225",
+  "アカアシクワガタ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=58.jpg&width=225",
+  "ヘビトンボ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=59.jpg&width=225",
+  "ニホンミツバチ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=60.jpg&width=225",
+  "モンシロチョウ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=61.jpg&width=225",
+  "モンキチョウ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=62.jpg&width=225",
+  "カナブン": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=63.jpg&width=225",
+  "ヒグラシ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=64.jpg&width=225"
 };
 function makeCard(c,zone,index){
  const el=document.createElement("div");el.className="card";el.draggable=true;el.dataset.zone=zone;el.dataset.index=index;
@@ -234,6 +301,9 @@ document.querySelectorAll(".zone").forEach(z=>{
  z.addEventListener("dragleave",()=>z.classList.remove("over"));
  z.addEventListener("drop",e=>{e.preventDefault();z.classList.remove("over");try{const d=JSON.parse(e.dataTransfer.getData("text/plain"));moveCard(d.zone,d.index,z.dataset.zone)}catch{}});
 });
+$("cardSearchButton").onclick=()=>{const q=$("cardSearchWord").value.trim();if(!q)return alert("カード名を入力してください");window.open("https://mushijingi.com/index.php?keyword="+encodeURIComponent(q),"_blank","noopener");};
+$("allCardListButton").onclick=()=>window.open("https://mushijingi.com/","_blank","noopener");
+$("cardSearchWord").addEventListener("keydown",e=>{if(e.key==="Enter")$("cardSearchButton").click()});
 $("create").onclick=createRoom;$("join").onclick=joinRoom;
 $("copyRoom").onclick=()=>navigator.clipboard?.writeText(roomId);
 $("addCard").onclick=async()=>{const name=$("cardName").value.trim();if(!name)return;hand.push({name,kind:$("cardKind").value});$("cardName").value="";await set(roomRef("privateHands/"+uid),hand);};
