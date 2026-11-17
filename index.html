@@ -450,11 +450,11 @@ function renderHand(){
 }
 function chooseMove(from,index){
  const opts=mySlot===0?["p0field","p0territory","p0grave","p0mana","hand"]:["p1field","p1territory","p1grave","p1mana","hand"];
- if(from==="p"+mySlot+"territory")opts.push("reveal");
- const labels={p0field:"自分の場",p0territory:"自分の縄張り",p0grave:"自分の捨て札",p0mana:"自分の餌場",p1field:"相手の場",p1territory:"相手の縄張り",p1grave:"相手の捨て札",p1mana:"相手の餌場",hand:"自分の手札",reveal:"表向きにする（自分だけに表示）"};
+ if(from==="p"+mySlot+"territory")opts.push("revealToHand");
+ const labels={p0field:"自分の場",p0territory:"自分のナワバリ",p0grave:"自分の捨て札",p0mana:"自分の餌場",p1field:"相手の場",p1territory:"相手のナワバリ",p1grave:"相手の捨て札",p1mana:"相手の餌場",hand:"自分の手札",revealToHand:"表向きにして手札に加える（自分だけに表示）"};
  const choice=prompt("移動先を番号で選択\n"+opts.map((x,i)=>(i+1)+": "+labels[x]).join("\n"));
  const dest=opts[Number(choice)-1];
- if(dest==="reveal"){if(!privateReveals.includes(index)){privateReveals.push(index);set(roomRef("privateTerritoryReveals/"+uid),privateReveals);}return;}
+ if(dest==="revealToHand"){moveCard(from,index,"hand");return;}
  if(dest)moveCard(from,index,dest);
 }
 async function moveCard(from,index,to){
