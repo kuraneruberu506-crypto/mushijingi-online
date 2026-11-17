@@ -203,7 +203,7 @@ function enterGame(){
  unsub.push(onValue(roomRef("privateTerritoryReveals/"+uid),s=>{privateReveals=Array.isArray(s.val())?s.val():[];render();}));
 
 }
-async function saveBoard(){await set(roomRef("board"),roomData)}
+
 function render(){
  for(let i=0;i<2;i++){ $("p"+i+"deck").textContent=roomData.deck?.[i]??0;$("p"+i+"prize").textContent=(roomData["p"+i+"territory"]||[]).length;$("p"+i).classList.toggle("active",roomData.turn===i);}
  const ownDeck=roomData.deck?.[mySlot]??0, opponentDeck=roomData.deck?.[1-mySlot]??0;
