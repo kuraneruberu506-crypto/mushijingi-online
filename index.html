@@ -23,7 +23,7 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 .zone{min-height:115px;border:1px dashed #607564;border-radius:11px;padding:8px;background:#111b15;position:relative}
 .zone h3{font-size:12px;color:var(--gold);margin:0 0 7px}.zone .cards{display:flex;gap:6px;flex-wrap:wrap;align-content:flex-start}
 .card{width:75px;min-height:95px;border-radius:8px;border:1px solid #b69b5e;background:linear-gradient(145deg,#f2e5bf,#c7b27c);color:#29251a;padding:6px;font-size:11px;display:flex;flex-direction:column;justify-content:space-between;cursor:grab;box-shadow:0 3px 7px #0005;overflow-wrap:anywhere}.card.has-image{padding:0;position:relative;overflow:hidden;background:#111}.card.has-image img{display:block;width:100%;height:100%;min-height:95px;object-fit:fill}.card.has-image button{position:absolute;bottom:3px;right:3px;opacity:.95}
-.card b{font-size:12px}.card .kind{font-size:9px;color:#594d31}.card button{font-size:10px;padding:3px;background:#65542e;color:white}
+.card.territory-back{padding:0;background:#111;overflow:hidden}.card.territory-back img{display:block;width:100%;height:100%;min-height:95px;object-fit:fill}.card.territory-back button{position:absolute;bottom:3px;right:3px;z-index:2}.card b{font-size:12px}.card .kind{font-size:9px;color:#594d31}.card button{font-size:10px;padding:3px;background:#65542e;color:white}
 .zone.over{background:#314d37;outline:2px solid var(--green)}
 .playerarea{display:grid;gap:9px}.area-title{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .controls{display:flex;gap:7px;flex-wrap:wrap}.controls button{font-size:13px;padding:8px}
@@ -420,7 +420,8 @@ function makeCard(c,zone,index){
  actions.append(move);
  const variantKey=String(c.name||"")+"|"+String(c.rarity||"");
  const imageUrl=cardVariantImages[variantKey]||cardImages[c.name]||normalizedCardImages[normalizeCardImageName(c.name)];
- if(imageUrl){const img=document.createElement("img");img.src=imageUrl;img.alt=c.name+"のカード画像";img.onerror=()=>{el.classList.remove("has-image");img.remove();el.prepend(title,kind);};el.classList.add("has-image");el.append(img,rarity,actions);}
+ if(String(zone).includes("territory")){const back=document.createElement("img");back.src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg";back.alt="蟲神器カードの裏面";back.onerror=()=>{back.remove();el.classList.remove("has-image");el.textContent="蟲神器";};el.classList.add("has-image","territory-back");el.append(back,actions);}
+ else if(imageUrl){const img=document.createElement("img");img.src=imageUrl;img.alt=c.name+"のカード画像";img.onerror=()=>{el.classList.remove("has-image");img.remove();el.prepend(title,kind);};el.classList.add("has-image");el.append(img,rarity,actions);}
  else{el.append(title,rarity,kind,actions);}
  el.addEventListener("dragstart",e=>e.dataTransfer.setData("text/plain",JSON.stringify({zone,index})));
  return el;
