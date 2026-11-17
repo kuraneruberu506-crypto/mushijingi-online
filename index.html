@@ -84,14 +84,10 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 <div class="area-title"><b>自分の手札</b><span class="small muted">相手には表示されません（自分の端末のみ）</span></div>
 <div class="zone handzone" id="myHand" data-zone="hand"><div class="cards"></div></div>
 <div class="controls">
-<input id="cardName" placeholder="カード名を入力" maxlength="35" style="width:150px" autocomplete="off"><select id="cardRarity" style="background:#111b15;color:white;border:1px solid var(--line);border-radius:9px;padding:9px"><option value="N">N</option><option value="R">R</option><option value="SR">SR</option><option value="UR">UR</option><option value="LR">LR</option></select>
-<select id="cardKind" style="background:#111b15;color:white;border:1px solid var(--line);border-radius:9px;padding:9px"><option>虫</option><option>術</option><option>強化</option><option>その他</option></select>
-<button class="primary" id="addCard">手札にカード追加</button>
 <button id="draw">山札から1枚引く</button>
 <button id="deckPlus">山札＋1</button><button id="deckMinus">山札－1</button>
 </div>
-<div id="handCardSuggestions" class="suggestions"></div>
-<div class="small muted">カード追加は手札の管理用です。最初に山札枚数・縄張り枚数を設定し、必要なカードを手札に追加してください。</div>
+<div class="small muted">手札には「山札から1枚引く」でカードを追加できます。</div>
 </div>
 
 <div class="panel">
@@ -407,7 +403,6 @@ function setupCardSuggestions(inputId,listId){
  });
 }
 setupCardSuggestions("deckCardName","deckCardSuggestions");
-setupCardSuggestions("cardName","handCardSuggestions");
 function makeCard(c,zone,index){
  const el=document.createElement("div");el.className="card";el.draggable=true;el.dataset.zone=zone;el.dataset.index=index;
  const title=document.createElement("b");title.textContent=c.name;
@@ -463,7 +458,6 @@ document.querySelectorAll(".zone").forEach(z=>{
 });
 $("create").onclick=createRoom;$("join").onclick=joinRoom;
 $("copyRoom").onclick=()=>navigator.clipboard?.writeText(roomId);
-$("addCard").onclick=async()=>{const name=$("cardName").value.trim();if(!name)return;hand.push({name,rarity:$("cardRarity").value,kind:$("cardKind").value});$("cardName").value="";$("handCardSuggestions").replaceChildren();await set(roomRef("privateHands/"+uid),hand);};
 $("draw").onclick=async()=>{const deck=roomData.deck||[20,20];if(!deckReady||deckCards.length===0)return log("先に20枚デッキを読み込んでください");if(deck[mySlot]<=0||deckCards.length===0)return log("山札がありません");const c=deckCards.shift();hand.push(c);await set(roomRef("privateHands/"+uid),hand);deck[mySlot]=deckCards.length;roomData.deck=deck;saveLocalDeck();await saveBoard();log("山札から「"+c.name+"」を引きました");};
 $("deckPlus").onclick=async()=>{roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]++;await saveBoard()};
 $("deckMinus").onclick=async()=>{roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=Math.max(0,roomData.deck[mySlot]-1);await saveBoard()};
