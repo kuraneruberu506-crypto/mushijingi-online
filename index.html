@@ -490,16 +490,16 @@ function chooseAttachTarget(handIndex){
 function chooseMove(from,index){
  const opts=mySlot===0?["p0field","p0territory","p0grave","p0mana","hand"]:["p1field","p1territory","p1grave","p1mana","hand"];
  if(from==="hand")opts.push("deckBottom");
- if(from==="p"+mySlot+"territory")opts.push("revealPrivate");
+ if(from==="p"+mySlot+"territory"){opts.push("revealPrivate");opts.push("revealAndHand");}
  const currentCard=from==="hand"?hand[index]:(roomData[from]||[])[index];
  if(currentCard)opts.push(currentCard.faceDown?"turnFaceUp":"turnFaceDown");
- const labels={p0field:"自分の場",p0territory:"自分のナワバリ",p0grave:"自分の捨て札",p0mana:"自分の餌場",p1field:"相手の場",p1territory:"相手のナワバリ",p1grave:"相手の捨て札",p1mana:"相手の餌場",hand:"自分の手札",deckBottom:"山札の一番下に置く",revealPrivate:"表向きにする（自分の画面だけ）",turnFaceDown:"裏向きにする",turnFaceUp:"表向きにする"};
+ const labels={p0field:"自分の場",p0territory:"自分のナワバリ",p0grave:"自分の捨て札",p0mana:"自分の餌場",p1field:"相手の場",p1territory:"相手のナワバリ",p1grave:"相手の捨て札",p1mana:"相手の餌場",hand:"自分の手札",deckBottom:"山札の一番下に置く",revealPrivate:"表向きにする（自分の画面だけ）",revealAndHand:"自分だけ表向きにして手札に加える",turnFaceDown:"裏向きにする",turnFaceUp:"表向きにする"};
  const old=document.getElementById("movePicker");if(old)old.remove();
  const picker=document.createElement("div");picker.id="movePicker";
  Object.assign(picker.style,{position:"fixed",inset:"0",zIndex:"9999",background:"rgba(0,0,0,.72)",display:"flex",alignItems:"center",justifyContent:"center",padding:"18px"});
  const panel=document.createElement("div");Object.assign(panel.style,{background:"#173b2b",border:"1px solid #6b9b7b",borderRadius:"14px",padding:"18px",width:"min(100%,360px)",maxHeight:"80vh",overflowY:"auto",color:"#fff"});
  const heading=document.createElement("h3");heading.textContent="移動先を選択";panel.append(heading);
- opts.forEach(dest=>{const b=document.createElement("button");b.type="button";b.textContent=labels[dest];Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",whiteSpace:"normal",textAlign:"left"});b.onclick=async()=>{picker.remove();if(dest==="revealPrivate"){if(!privateReveals.some(i=>Number(i)===Number(index))){privateReveals.push(index);await set(roomRef("privateTerritoryReveals/"+uid),privateReveals);render();}}else if(dest==="turnFaceDown"||dest==="turnFaceUp")flipCard(from,index,dest==="turnFaceDown");else moveCard(from,index,dest);};panel.append(b);});
+ opts.forEach(dest=>{const b=document.createElement("button");b.type="button";b.textContent=labels[dest];Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",whiteSpace:"normal",textAlign:"left"});b.onclick=async()=>{picker.remove();if(dest==="revealPrivate"){if(!privateReveals.some(i=>Number(i)===Number(index))){privateReveals.push(index);await set(roomRef("privateTerritoryReveals/"+uid),privateReveals);render();}}else if(dest==="revealAndHand"){const card=(roomData[from]||[])[index];if(card)card.faceDown=false;await moveCard(from,index,"hand");}else if(dest==="turnFaceDown"||dest==="turnFaceUp")flipCard(from,index,dest==="turnFaceDown");else moveCard(from,index,dest);};panel.append(b);});
  const cancel=document.createElement("button");cancel.type="button";cancel.textContent="キャンセル";cancel.style.width="100%";cancel.onclick=()=>picker.remove();panel.append(cancel);picker.append(panel);picker.addEventListener("click",e=>{if(e.target===picker)picker.remove();});document.body.append(picker);
 }
 async function flipCard(from,index,faceDown){
