@@ -431,7 +431,7 @@ function makeCard(c,zone,index){
  actions.append(move);
  const variantKey=String(c.name||"")+"|"+String(c.rarity||"");
  const imageUrl=cardVariantImages[variantKey]||cardImages[c.name]||normalizedCardImages[normalizeCardImageName(c.name)];
- if(String(zone).includes("territory")){const back=document.createElement("img");back.src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg";back.alt="蟲神器カードの裏面";back.onerror=()=>{back.remove();el.classList.remove("has-image");el.textContent="蟲神器";};el.classList.add("has-image","territory-back");el.append(back,actions);}
+ if(String(zone).includes("territory")&&!c.faceUp){const back=document.createElement("img");back.src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg";back.alt="蟲神器カードの裏面";back.onerror=()=>{back.remove();el.classList.remove("has-image");el.textContent="蟲神器";};el.classList.add("has-image","territory-back");const reveal=document.createElement("button");reveal.textContent="表向きにする";reveal.onclick=async()=>{const arr=roomData[zone]||[];if(!arr[index])return;arr[index].faceUp=true;await saveBoard();};actions.prepend(reveal);el.append(back,actions);}
  else if(imageUrl){const img=document.createElement("img");img.src=imageUrl;img.alt=c.name+"のカード画像";img.onerror=()=>{el.classList.remove("has-image");img.remove();el.prepend(title,kind);};el.classList.add("has-image");el.append(img,rarity,actions);}
  else{el.append(title,rarity,kind,actions);}
  el.addEventListener("dragstart",e=>e.dataTransfer.setData("text/plain",JSON.stringify({zone,index})));
