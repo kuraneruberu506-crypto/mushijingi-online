@@ -103,9 +103,7 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 </section>
 </main>
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-import { getDatabase, ref, get, set, update, onValue, push, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+let initializeApp, getAuth, signInAnonymously, getDatabase, ref, get, set, update, onValue, push, runTransaction;
 
 // Firebase Consoleで作成したWebアプリの設定をここに貼り付けてください。
 const firebaseConfig = {
@@ -125,9 +123,16 @@ const blankBoard = () => ({p0field:[],p0territory:[],p0grave:[],p0mana:[],p1fiel
 const cfgReady = !firebaseConfig.apiKey.startsWith("YOUR_");
 if(cfgReady){
  try{
+  const [appSdk,authSdk,dbSdk]=await Promise.all([
+   import("https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js"),
+   import("https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js"),
+   import("https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js")
+  ]);
+  ({initializeApp}=appSdk);({getAuth,signInAnonymously}=authSdk);
+  ({getDatabase,ref,get,set,update,onValue,push,runTransaction}=dbSdk);
   const app=initializeApp(firebaseConfig); auth=getAuth(app); db=getDatabase(app);
   await signInAnonymously(auth); uid=auth.currentUser.uid; $("status").textContent="オンライン接続済み";
- }catch(e){$("status").textContent="接続エラー";$("lobbyMsg").textContent=e.message;}
+ }catch(e){$("status").textContent="接続エラー";$("lobbyMsg").textContent="Firebase接続失敗："+(e?.message||String(e));}
 }else{$("lobbyMsg").textContent="※利用開始にはFirebaseの設定が必要です。下のREADMEを確認してください。";}
 
 function msg(t){$("lobbyMsg").textContent=t}
