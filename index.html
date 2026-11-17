@@ -485,7 +485,7 @@ function chooseAttachTarget(handIndex){
  Object.assign(picker.style,{position:"fixed",inset:"0",zIndex:"10000",background:"rgba(0,0,0,.72)",display:"flex",alignItems:"center",justifyContent:"center",padding:"18px"});
  const panel=document.createElement("div");Object.assign(panel.style,{background:"#173b2b",border:"1px solid #6b9b7b",borderRadius:"14px",padding:"18px",width:"min(100%,360px)",maxHeight:"80vh",overflowY:"auto",color:"#fff"});
  const heading=document.createElement("h3");heading.textContent="強化カードをつける虫を選択";panel.append(heading);
- insects.forEach(({card,index})=>{const b=document.createElement("button");b.type="button";b.textContent=card.name;Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",textAlign:"left"});b.onclick=async()=>{picker.remove();const enhancement=hand.splice(handIndex,1)[0];if(!enhancement)return;const target=(roomData["p"+mySlot+"field"]||[])[index];if(!target)return;target.attachments=Array.isArray(target.attachments)?target.attachments:[];target.attachments.push(enhancement);render();renderHand();await set(roomRef("privateHands/"+uid),hand);await saveBoard();};panel.append(b);});
+ insects.forEach(({card,index})=>{const b=document.createElement("button");b.type="button";b.textContent=card.name;Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",textAlign:"left"});b.onclick=async()=>{picker.remove();const enhancement=hand.splice(handIndex,1)[0];if(!enhancement)return;const target=(roomData["p"+mySlot+"field"]||[])[index];if(!target)return;target.attachments=Array.isArray(target.attachments)?target.attachments:[];target.attachments.push(enhancement);render();renderHand();await set(roomRef("privateHands/"+uid),hand);await set(roomRef("board/p"+mySlot+"field"),roomData["p"+mySlot+"field"]);};panel.append(b);});
  const cancel=document.createElement("button");cancel.type="button";cancel.textContent="キャンセル";cancel.style.width="100%";cancel.onclick=()=>picker.remove();panel.append(cancel);picker.append(panel);document.body.append(picker);
 }
 function chooseMove(from,index){
@@ -509,7 +509,7 @@ async function flipCard(from,index,faceDown){
  card.faceDown=faceDown;
  render();renderHand();
  if(from==="hand")await set(roomRef("privateHands/"+uid),hand);
- else await saveBoard();
+ else await set(roomRef("board/"+from),roomData[from]);
 }
 let territoryCollecting=false;
 async function collectTerritoryCard(index){
@@ -565,7 +565,7 @@ async function moveCard(from,index,to){
   if(from==="hand"&&to==="deckBottom"){
    const moved=hand.splice(index,1)[0];if(!moved)return;
    deckCards.push(moved);roomData.deck=Array.isArray(roomData.deck)?[...roomData.deck]:[20,20];roomData.deck[mySlot]=deckCards.length;
-   render();renderHand();await set(roomRef("privateHands/"+uid),hand);await saveBoard();return;
+   render();renderHand();await set(roomRef("privateHands/"+uid),hand);await update(roomRef("board"),{deck:roomData.deck});return;
   }
   // 盤面同士の移動はFirebaseトランザクションで移動元・移動先を同時更新する。
   if(from!=="hand"&&to!=="hand"){
@@ -658,10 +658,10 @@ $("deckNew").onclick=()=>{selectedDeckId="";editingDeckId="";$("savedDeckSelect"
 $("deckSave").onclick=()=>{if(deckCards.length!==20)return alert("デッキは20枚にしてください（現在"+deckCards.length+"枚）");const name=$("deckName").value.trim();if(!name)return alert("デッキ名を入力してください");const existing=savedDecks.find(d=>d.id===editingDeckId);if(existing){existing.name=name;existing.cards=[...deckCards];selectedDeckId=existing.id;}else{const id="deck-"+Date.now()+"-"+Math.random().toString(36).slice(2,7);savedDecks.push({id,name,cards:[...deckCards]});selectedDeckId=id;}try{persistSavedDecks();refreshSavedDeckSelect();deckReady=true;editingDeckId=selectedDeckId;alert("「"+name+"」を保存しました");}catch(e){alert("保存に失敗しました："+e.message);}};
 $("deckEditLoad").onclick=()=>{const d=getSelectedSavedDeck();if(!d)return alert("編集する保存デッキを選択してください");editingDeckId=d.id;deckCards=[...d.cards];$("deckName").value=d.name;deckReady=true;renderDeck();alert("「"+d.name+"」を編集用に読み込みました。保存するとこのデッキを上書きします");};
 $("deckDelete").onclick=()=>{const d=getSelectedSavedDeck();if(!d)return alert("削除するデッキを選択してください");if(!confirm("「"+d.name+"」を削除しますか？"))return;savedDecks=savedDecks.filter(x=>x.id!==selectedDeckId);selectedDeckId=savedDecks[0]?.id||"";editingDeckId="";const next=getSelectedSavedDeck();deckCards=next?[...next.cards]:[];$("deckName").value=next?.name||"";persistSavedDecks();refreshSavedDeckSelect();deckReady=deckCards.length===20;renderDeck();};
-$("deckLoad").onclick=()=>{const d=getSelectedSavedDeck();if(!d||!Array.isArray(d.cards)||d.cards.length!==20)return alert("対戦に使う20枚デッキを選択してください");deckCards=[...d.cards];deckReady=true;roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=20;saveBoard();renderDeck();$("gameDeckStatus").textContent="「"+d.name+"」を読み込みました。山札からカードを引けます。";log("保存デッキ「"+d.name+"」を読み込みました");};
+$("deckLoad").onclick=()=>{const d=getSelectedSavedDeck();if(!d||!Array.isArray(d.cards)||d.cards.length!==20)return alert("対戦に使う20枚デッキを選択してください");deckCards=[...d.cards];deckReady=true;roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=20;update(roomRef("board"),{deck:roomData.deck});renderDeck();$("gameDeckStatus").textContent="「"+d.name+"」を読み込みました。山札からカードを引けます。";log("保存デッキ「"+d.name+"」を読み込みました");};
 $("deckClear").onclick=()=>{if(!confirm("デッキを空にしますか？"))return;deckCards=[];deckReady=false;saveLocalDeck();renderDeck();};
 
-$("startGame").onclick=async()=>{try{const selected=getSelectedSavedDeck();const saved=selected?.cards;if(!Array.isArray(saved)||saved.length!==20)return alert("対戦に使う20枚デッキを選択してから開始してください");const territoryKey="p"+mySlot+"territory";if((roomData[territoryKey]||[]).length>0||hand.length>0)return alert("すでに対戦準備が完了しているようです。盤面と手札を確認してください");const shuffled=[...saved];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}roomData={...blankBoard(),...roomData};roomData[territoryKey]=shuffled.slice(0,6);hand=shuffled.slice(6,10);deckCards=shuffled.slice(10);deckReady=true;roomData.deck=Array.isArray(roomData.deck)?[...roomData.deck]:[20,20];roomData.deck[mySlot]=deckCards.length;privateReveals=[];render();renderHand();$("gameDeckStatus").textContent="配布中：ナワバリ6枚・手札4枚";await set(roomRef("privateTerritoryReveals/"+uid),[]);await set(roomRef("privateHands/"+uid),hand);await saveBoard();await set(roomRef("board/deck/"+mySlot),deckCards.length);render();renderHand();renderDeck();$("gameDeckStatus").textContent="対戦準備完了：ナワバリ6枚・手札4枚・山札"+deckCards.length+"枚";log("対戦スタート：ナワバリ6枚、手札4枚を配りました");}catch(e){$("gameDeckStatus").textContent="対戦準備に失敗しました："+(e?.message||String(e));alert("対戦準備に失敗しました："+(e?.message||String(e)));}};
+$("startGame").onclick=async()=>{try{const selected=getSelectedSavedDeck();const saved=selected?.cards;if(!Array.isArray(saved)||saved.length!==20)return alert("対戦に使う20枚デッキを選択してから開始してください");const territoryKey="p"+mySlot+"territory";if((roomData[territoryKey]||[]).length>0||hand.length>0)return alert("すでに対戦準備が完了しているようです。盤面と手札を確認してください");const shuffled=[...saved];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}roomData={...blankBoard(),...roomData};roomData[territoryKey]=shuffled.slice(0,6);hand=shuffled.slice(6,10);deckCards=shuffled.slice(10);deckReady=true;roomData.deck=Array.isArray(roomData.deck)?[...roomData.deck]:[20,20];roomData.deck[mySlot]=deckCards.length;privateReveals=[];render();renderHand();$("gameDeckStatus").textContent="配布中：ナワバリ6枚・手札4枚";await set(roomRef("privateTerritoryReveals/"+uid),[]);await set(roomRef("privateHands/"+uid),hand);await update(roomRef("board"),{[territoryKey]:roomData[territoryKey],deck:roomData.deck});render();renderHand();renderDeck();$("gameDeckStatus").textContent="対戦準備完了：ナワバリ6枚・手札4枚・山札"+deckCards.length+"枚";log("対戦スタート：ナワバリ6枚、手札4枚を配りました");}catch(e){$("gameDeckStatus").textContent="対戦準備に失敗しました："+(e?.message||String(e));alert("対戦準備に失敗しました："+(e?.message||String(e)));}};
 
 
 async function handleCardDrop(from,index,to){
@@ -678,8 +678,8 @@ document.querySelectorAll(".zone[data-zone]").forEach(z=>{
 $("create").onclick=createRoom;$("join").onclick=joinRoom;
 $("copyRoom").onclick=()=>navigator.clipboard?.writeText(roomId);
 $("draw").onclick=async()=>{if(!deckReady||deckCards.length===0)return log("先に20枚デッキを読み込んでください");const deck=Array.isArray(roomData.deck)?[...roomData.deck]:[20,20];if(Number(deck[mySlot]??deckCards.length)<=0)return log("山札がありません");const c=deckCards.shift();hand=[...hand,c];try{await set(roomRef("privateHands/"+uid),hand);deck[mySlot]=deckCards.length;await update(roomRef("board"),{deck});roomData.deck=deck;render();renderHand();log("山札から「"+c.name+"」を引きました");}catch(e){deckCards.unshift(c);hand=hand.slice(0,-1);log("ドローに失敗しました："+(e?.message||String(e)));}};
-$("turn").onclick=async()=>{roomData.turn=1-(roomData.turn||0);roomData.logs=roomData.logs||[];roomData.logs.push(("プレイヤー"+(mySlot+1))+"がターン交代");await saveBoard()};
-$("coin").onclick=async()=>{roomData.turn=Math.random()<.5?0:1;roomData.logs=roomData.logs||[];roomData.logs.push("先攻："+$("p"+roomData.turn+"name").textContent);await saveBoard()};
+$("turn").onclick=async()=>{const next=1-(Number(roomData.turn)||0);await update(roomRef("board"),{turn:next});roomData.turn=next;render()};
+$("coin").onclick=async()=>{const next=Math.random()<.5?0:1;await update(roomRef("board"),{turn:next});roomData.turn=next;render()};
 loadAllCardImages();
 loadLocalDeck();
 </script>
