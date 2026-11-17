@@ -537,32 +537,54 @@ async function collectTerritoryCard(index){
 }
 async function moveCard(from,index,to){
  if(from===to)return;
- if(from==="hand"&&to==="deckBottom"){
-  const moved=hand.splice(index,1)[0];if(!moved)return;
-  deckCards.push(moved);roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=deckCards.length;
-  render();renderHand();await set(roomRef("privateHands/"+uid),hand);await saveBoard();return;
- }
- let moved;
- let handChanged=false, revealsChanged=false;
- if(from==="hand"){
-  moved=hand.splice(index,1)[0];if(!moved)return;
-  handChanged=true;
-  roomData[to]=roomData[to]||[];roomData[to].push(moved);
- }else{
-  roomData[from]=roomData[from]||[];moved=roomData[from].splice(index,1)[0];if(!moved)return;
-  if(from==="p"+mySlot+"territory"){
-   privateReveals=privateReveals.filter(i=>i!==index).map(i=>i>index?i-1:i);
-   revealsChanged=true;
+ try{
+  if(from==="hand"&&to==="deckBottom"){
+   const moved=hand.splice(index,1)[0];if(!moved)return;
+   deckCards.push(moved);roomData.deck=Array.isArray(roomData.deck)?[...roomData.deck]:[20,20];roomData.deck[mySlot]=deckCards.length;
+   render();renderHand();await set(roomRef("privateHands/"+uid),hand);await saveBoard();return;
   }
-  if(to==="hand"){hand.push(moved);handChanged=true;}
-  else{roomData[to]=roomData[to]||[];roomData[to].push(moved);}
+  const boardSnap=await get(roomRef("board"));
+  const latestBoard=boardSnap.val()||blankBoard();
+  let latestHand=[];
+  if(from==="hand"||to==="hand"){
+   const handSnap=await get(roomRef("privateHands/"+uid));
+   latestHand=Array.isArray(handSnap.val())?handSnap.val():[];
+  }
+  let moved;
+  let revealsChanged=false;
+  if(from==="hand"){
+   moved=latestHand.splice(index,1)[0];
+   if(!moved)return;
+   if(to==="hand")return;
+   latestBoard[to]=Array.isArray(latestBoard[to])?latestBoard[to]:[];
+   latestBoard[to].push(moved);
+  }else{
+   latestBoard[from]=Array.isArray(latestBoard[from])?latestBoard[from]:[];
+   moved=latestBoard[from].splice(index,1)[0];
+   if(!moved)return;
+   if(from==="p"+mySlot+"territory"){
+    privateReveals=privateReveals.filter(i=>i!==index).map(i=>i>index?i-1:i);
+    revealsChanged=true;
+   }
+   if(to==="hand"){
+    moved.faceDown=false;
+    latestHand.push(moved);
+   }else{
+    latestBoard[to]=Array.isArray(latestBoard[to])?latestBoard[to]:[];
+    latestBoard[to].push(moved);
+   }
+  }
+  const updates={board:latestBoard};
+  if(from==="hand"||to==="hand")updates["privateHands/"+uid]=latestHand;
+  if(revealsChanged)updates["privateTerritoryReveals/"+uid]=privateReveals;
+  await update(roomRef(),updates);
+  roomData=latestBoard;
+  if(from==="hand"||to==="hand")hand=latestHand;
+  render();renderHand();
+ }catch(e){
+  console.error("カード移動に失敗",e);
+  alert("カードの移動に失敗しました。通信状態を確認して、もう一度お試しください。");
  }
- roomData.logs=roomData.logs||[];roomData.logs.push(`プレイヤー${mySlot+1}：カードを移動`);
- // 端末画面を先に更新し、通信完了を待たずに移動結果を表示する
- render();renderHand();
- if(handChanged)await set(roomRef("privateHands/"+uid),hand);
- if(revealsChanged)await set(roomRef("privateTerritoryReveals/"+uid),privateReveals);
- await saveBoard();
 }
 
 function deckStorageKey(){return "mushijingi-decks-v3";}
