@@ -70,7 +70,11 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 <div class="panel" id="cardSearchPanel">
 <div class="area-title"><b>蟲神器カード検索</b><span class="small muted">カード一覧・画像を確認</span></div>
 <div class="card-search-tools"><input id="cardSearchWord" placeholder="カード名を入力して検索"><button id="cardSearchButton" class="primary">カードを検索</button><button id="allCardListButton">全カード一覧</button></div>
-<div class="card-search-note">カード画像は、利用許可を得たカード検索サイトの画像を参照しています。現在、対戦盤面で自動表示できる画像は第1弾の一部（1〜64番）です。検索ボタンから全カードの画像・情報を確認できます。</div>
+<div class="card-search-note">第1弾〜第8弾のカード一覧をここに表示します。カード名で検索するか、全カード一覧を開いてください。対戦盤面の自動画像表示は、登録済みカードから順次拡大します。</div>
+<div id="cardCatalogFrameWrap" class="hidden" style="margin-top:10px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#111b15">
+<div class="row" style="justify-content:space-between;padding:7px"><b id="cardCatalogTitle" class="small">カード一覧</b><button id="closeCardCatalog" type="button">閉じる</button></div>
+<iframe id="cardCatalogFrame" title="蟲神器カード一覧" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" style="display:block;width:100%;height:65vh;min-height:420px;border:0;background:white"></iframe>
+</div>
 </div>
 <div class="area-title"><b>盤面</b><span class="small muted">カードをドラッグ、またはカードの移動先ボタンで操作</span></div>
 <div class="zones">
@@ -429,8 +433,16 @@ document.querySelectorAll(".zone").forEach(z=>{
  z.addEventListener("dragleave",()=>z.classList.remove("over"));
  z.addEventListener("drop",e=>{e.preventDefault();z.classList.remove("over");try{const d=JSON.parse(e.dataTransfer.getData("text/plain"));moveCard(d.zone,d.index,z.dataset.zone)}catch{}});
 });
-$("cardSearchButton").onclick=()=>{const q=$("cardSearchWord").value.trim();if(!q)return alert("カード名を入力してください");window.open("https://mushijingi.com/index.php?keyword="+encodeURIComponent(q),"_blank","noopener");};
-$("allCardListButton").onclick=()=>window.open("https://mushijingi.com/","_blank","noopener");
+function showCardCatalog(url,title){
+ const wrap=$("cardCatalogFrameWrap");
+ $("cardCatalogTitle").textContent=title;
+ $("cardCatalogFrame").src=url;
+ wrap.classList.remove("hidden");
+ wrap.scrollIntoView({behavior:"smooth",block:"start"});
+}
+$("cardSearchButton").onclick=()=>{const q=$("cardSearchWord").value.trim();if(!q)return alert("カード名を入力してください");showCardCatalog("https://mushijingi.com/index.php?keyword="+encodeURIComponent(q),"検索結果："+q);};
+$("allCardListButton").onclick=()=>showCardCatalog("https://mushijingi.com/","第1弾〜第8弾・全カード一覧");
+$("closeCardCatalog").onclick=()=>{$("cardCatalogFrameWrap").classList.add("hidden");$("cardCatalogFrame").src="about:blank";};
 $("cardSearchWord").addEventListener("keydown",e=>{if(e.key==="Enter")$("cardSearchButton").click()});
 $("create").onclick=createRoom;$("join").onclick=joinRoom;
 $("copyRoom").onclick=()=>navigator.clipboard?.writeText(roomId);
