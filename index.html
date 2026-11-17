@@ -556,6 +556,31 @@ async function moveCard(from,index,to){
    deckCards.push(moved);roomData.deck=Array.isArray(roomData.deck)?[...roomData.deck]:[20,20];roomData.deck[mySlot]=deckCards.length;
    render();renderHand();await set(roomRef("privateHands/"+uid),hand);await saveBoard();return;
   }
+  // 盤面同士の移動はFirebaseトランザクションで移動元・移動先を同時更新する。
+  if(from!=="hand"&&to!=="hand"){
+   const result=await runTransaction(roomRef("board"),current=>{
+    if(!current)return;
+    const source=Array.isArray(current[from])?[...current[from]]:[];
+    const target=Array.isArray(current[to])?[...current[to]]:[];
+    const cardIndex=Number(index);
+    if(!Number.isInteger(cardIndex)||cardIndex<0||cardIndex>=source.length)return;
+    const moved=source.splice(cardIndex,1)[0];
+    if(!moved)return;
+    target.push(moved);
+    current[from]=source;
+    current[to]=target;
+    return current;
+   });
+   if(!result.committed){log("カードの移動が反映されませんでした。もう一度お試しください。");return;}
+   const latest=result.snapshot.val()||blankBoard();
+   if(from==="p"+mySlot+"territory"){
+    privateReveals=privateReveals.filter(i=>Number(i)!==Number(index)).map(i=>Number(i)>Number(index)?Number(i)-1:Number(i));
+    await set(roomRef("privateTerritoryReveals/"+uid),privateReveals);
+   }
+   roomData=latest;
+   render();renderHand();
+   return;
+  }
   const boardSnap=await get(roomRef("board"));
   const latestBoard=boardSnap.val()||blankBoard();
   let latestHand=[];
