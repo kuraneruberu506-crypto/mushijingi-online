@@ -453,8 +453,8 @@ function makeCard(c,zone,index){
  const imageUrl=cardVariantImages[variantKey]||cardImages[c.name]||normalizedCardImages[normalizeCardImageName(c.name)];
  const isTerritory=String(zone).endsWith("territory");
  const isOwnRevealedTerritory=isTerritory&&zone==="p"+mySlot+"territory"&&privateReveals.some(i=>Number(i)===Number(index));
- if(c.faceDown||(isTerritory&&!isOwnRevealedTerritory)){const back=document.createElement("img");back.src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg";back.alt="蟲神器カードの裏面";back.onerror=()=>{back.remove();el.classList.remove("has-image");el.style.background="linear-gradient(145deg,#233d30,#101b15 55%,#8b7138)";el.style.border="2px solid #c9a84f";el.style.display="grid";el.style.placeItems="center";el.style.color="#f4df9b";el.style.fontWeight="800";el.textContent="蟲神器";};el.classList.add("has-image","territory-back");el.append(back,actions);}
- else if(imageUrl){const img=document.createElement("img");img.src=imageUrl;img.alt=c.name+"のカード画像";img.onerror=()=>{el.classList.remove("has-image");img.remove();el.prepend(title,kind);};el.classList.add("has-image");el.append(img,rarity,actions);}
+ if(c.faceDown||(isTerritory&&!isOwnRevealedTerritory)){const back=document.createElement("img");back.draggable=false;back.src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg";back.alt="蟲神器カードの裏面";back.onerror=()=>{back.remove();el.classList.remove("has-image");el.style.background="linear-gradient(145deg,#233d30,#101b15 55%,#8b7138)";el.style.border="2px solid #c9a84f";el.style.display="grid";el.style.placeItems="center";el.style.color="#f4df9b";el.style.fontWeight="800";el.textContent="蟲神器";};el.classList.add("has-image","territory-back");el.append(back,actions);}
+ else if(imageUrl){const img=document.createElement("img");img.draggable=false;img.src=imageUrl;img.alt=c.name+"のカード画像";img.onerror=()=>{el.classList.remove("has-image");img.remove();el.prepend(title,kind);};el.classList.add("has-image");el.append(img,rarity,actions);}
  else{el.append(title,rarity,kind,actions);}
  if(Array.isArray(c.attachments)&&c.attachments.length){const attached=document.createElement("div");attached.className="attached-cards";attached.textContent="強化："+c.attachments.map(x=>x.name).join("、");Object.assign(attached.style,{fontSize:"11px",padding:"4px",marginTop:"4px",background:"rgba(245,215,110,.18)",borderRadius:"5px",whiteSpace:"normal"});el.append(attached);}
  let dragPreview=null;
@@ -464,7 +464,7 @@ function makeCard(c,zone,index){
  let touchStart=null,touchPreview=null;
  el.addEventListener("touchstart",e=>{if(e.target.closest("button"))return;const t=e.touches[0];touchStart={x:t.clientX,y:t.clientY,moved:false};},{passive:true});
  el.addEventListener("touchmove",e=>{if(!touchStart)return;const t=e.touches[0];if(Math.abs(t.clientX-touchStart.x)+Math.abs(t.clientY-touchStart.y)>12){touchStart.moved=true;e.preventDefault();if(!touchPreview){touchPreview=el.cloneNode(true);touchPreview.removeAttribute("draggable");Object.assign(touchPreview.style,{position:"fixed",left:"0",top:"0",width:Math.max(72,el.getBoundingClientRect().width)+"px",margin:"0",opacity:"0.95",pointerEvents:"none",zIndex:"100000",transform:"translate(-50%,-50%) rotate(-3deg)",border:"2px solid #f5d76e",boxShadow:"0 8px 24px rgba(0,0,0,.55)"});document.body.append(touchPreview);}touchPreview.style.left=t.clientX+"px";touchPreview.style.top=t.clientY+"px";}},{passive:false});
- el.addEventListener("touchend",e=>{if(!touchStart)return;const moved=touchStart.moved;touchStart=null;if(touchPreview){touchPreview.remove();touchPreview=null;}if(!moved)return;const t=e.changedTouches[0];const target=document.elementFromPoint(t.clientX,t.clientY);const dropZone=target?.closest(".zone[data-zone]");if(dropZone&&dropZone.dataset.zone!==zone)moveCard(zone,index,dropZone.dataset.zone);});
+ el.addEventListener("touchend",e=>{if(!touchStart)return;const moved=touchStart.moved;touchStart=null;if(touchPreview){touchPreview.remove();touchPreview=null;}if(!moved)return;const t=e.changedTouches[0];const hits=document.elementsFromPoint(t.clientX,t.clientY);const dropZone=hits.map(node=>node.closest?.(".zone[data-zone]")).find(Boolean);if(dropZone&&dropZone.dataset.zone!==zone)handleCardDrop(zone,index,dropZone.dataset.zone);});
  el.addEventListener("touchcancel",()=>{touchStart=null;if(touchPreview){touchPreview.remove();touchPreview=null;}});
  return el;
 }
@@ -619,10 +619,16 @@ $("deckClear").onclick=()=>{if(!confirm("デッキを空にしますか？"))ret
 $("startGame").onclick=async()=>{try{const selected=getSelectedSavedDeck();const saved=selected?.cards;if(!Array.isArray(saved)||saved.length!==20)return alert("対戦に使う20枚デッキを選択してから開始してください");const territoryKey="p"+mySlot+"territory";if((roomData[territoryKey]||[]).length>0||hand.length>0)return alert("すでに対戦準備が完了しているようです。盤面と手札を確認してください");const shuffled=[...saved];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}roomData={...blankBoard(),...roomData};roomData[territoryKey]=shuffled.slice(0,6);hand=shuffled.slice(6,10);deckCards=shuffled.slice(10);deckReady=true;roomData.deck=Array.isArray(roomData.deck)?[...roomData.deck]:[20,20];roomData.deck[mySlot]=deckCards.length;privateReveals=[];render();renderHand();$("gameDeckStatus").textContent="配布中：ナワバリ6枚・手札4枚";await set(roomRef("privateTerritoryReveals/"+uid),[]);await set(roomRef("privateHands/"+uid),hand);await saveBoard();await set(roomRef("board/deck/"+mySlot),deckCards.length);render();renderHand();renderDeck();$("gameDeckStatus").textContent="対戦準備完了：ナワバリ6枚・手札4枚・山札"+deckCards.length+"枚";log("対戦スタート：ナワバリ6枚、手札4枚を配りました");}catch(e){$("gameDeckStatus").textContent="対戦準備に失敗しました："+(e?.message||String(e));alert("対戦準備に失敗しました："+(e?.message||String(e)));}};
 
 
-document.querySelectorAll(".zone").forEach(z=>{
- z.addEventListener("dragover",e=>{e.preventDefault();z.classList.add("over")});
- z.addEventListener("dragleave",()=>z.classList.remove("over"));
- z.addEventListener("drop",e=>{e.preventDefault();z.classList.remove("over");try{const d=JSON.parse(e.dataTransfer.getData("text/plain"));moveCard(d.zone,d.index,z.dataset.zone)}catch{}});
+async function handleCardDrop(from,index,to){
+ if(!to||from===to)return;
+ if(from==="p"+mySlot+"territory"&&to==="hand"){await collectTerritoryCard(index);return;}
+ await moveCard(from,index,to);
+}
+document.querySelectorAll(".zone[data-zone]").forEach(z=>{
+ z.addEventListener("dragenter",e=>{e.preventDefault();z.classList.add("over")});
+ z.addEventListener("dragover",e=>{e.preventDefault();if(e.dataTransfer)e.dataTransfer.dropEffect="move";z.classList.add("over")});
+ z.addEventListener("dragleave",e=>{if(!z.contains(e.relatedTarget))z.classList.remove("over")});
+ z.addEventListener("drop",e=>{e.preventDefault();e.stopPropagation();z.classList.remove("over");try{const d=JSON.parse(e.dataTransfer.getData("text/plain"));handleCardDrop(d.zone,Number(d.index),z.dataset.zone);}catch(err){console.error("カードのドロップに失敗",err);}});
 });
 $("create").onclick=createRoom;$("join").onclick=joinRoom;
 $("copyRoom").onclick=()=>navigator.clipboard?.writeText(roomId);
