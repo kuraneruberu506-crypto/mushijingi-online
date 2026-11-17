@@ -531,6 +531,7 @@ async function collectTerritoryCard(index){
   nextHand.push({...card,faceDown:false});
   const reveals=Array.isArray(revealSnap.val())?revealSnap.val():[];
   const nextReveals=reveals.filter(i=>Number(i)!==cardIndex).map(i=>Number(i)>cardIndex?Number(i)-1:Number(i));
+  // 手札への追加を先に確定し、次にナワバリから取り除く。通信失敗時のカード消失を防ぐ。
   await set(roomRef("privateHands/"+uid),nextHand);
   await set(roomRef("board/"+zone),nextTerritory);
   await set(roomRef("privateTerritoryReveals/"+uid),nextReveals);
@@ -586,8 +587,16 @@ async function moveCard(from,index,to){
     latestBoard[to].push(moved);
    }
   }
-  await set(roomRef("board"),latestBoard);
-  if(from==="hand"||to==="hand")await set(roomRef("privateHands/"+uid),latestHand);
+  // 移動先を先に保存してから移動元を更新し、通信途中でカードが消えるのを防ぐ。
+  if(from==="hand"){
+   await set(roomRef("board/"+to),latestBoard[to]);
+   await set(roomRef("privateHands/"+uid),latestHand);
+  }else if(to==="hand"){
+   await set(roomRef("privateHands/"+uid),latestHand);
+   await set(roomRef("board/"+from),latestBoard[from]);
+  }else{
+   await update(roomRef("board"),{[from]:latestBoard[from],[to]:latestBoard[to]});
+  }
   if(revealsChanged)await set(roomRef("privateTerritoryReveals/"+uid),privateReveals);
   roomData=latestBoard;
   if(from==="hand"||to==="hand")hand=latestHand;
