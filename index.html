@@ -652,7 +652,28 @@ $("deckDelete").onclick=()=>{const d=getSelectedSavedDeck();if(!d)return alert("
 $("deckLoad").onclick=()=>{const d=getSelectedSavedDeck();if(!d||!Array.isArray(d.cards)||d.cards.length!==20)return alert("対戦に使う20枚デッキを選択してください");deckCards=[...d.cards];deckReady=true;roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=20;update(roomRef("board"),{deck:roomData.deck});renderDeck();$("gameDeckStatus").textContent="「"+d.name+"」を読み込みました。山札からカードを引けます。";log("保存デッキ「"+d.name+"」を読み込みました");};
 $("deckClear").onclick=()=>{if(!confirm("デッキを空にしますか？"))return;deckCards=[];deckReady=false;saveLocalDeck();renderDeck();};
 
-$("startGame").onclick=async()=>{try{const selected=getSelectedSavedDeck();const saved=selected?.cards;if(!Array.isArray(saved)||saved.length!==20)return alert("対戦に使う20枚デッキを選択してから開始してください");const territoryKey="p"+mySlot+"territory";if((roomData[territoryKey]||[]).length>0||hand.length>0)return alert("すでに対戦準備が完了しているようです。盤面と手札を確認してください");const shuffled=[...saved];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}const prepared=shuffled.map((card,i)=>({...card,_territoryId:uid+"_"+Date.now()+"_"+i}));roomData={...blankBoard(),...roomData};roomData[territoryKey]=prepared.slice(0,6);hand=prepared.slice(6,10);deckCards=prepared.slice(10);deckReady=true;roomData.deck=Array.isArray(roomData.deck)?[...roomData.deck]:[20,20];roomData.deck[mySlot]=deckCards.length;render();renderHand();$("gameDeckStatus").textContent="配布中：ナワバリ6枚・手札4枚";await set(roomRef("privateHands/"+uid),hand);await update(roomRef("board"),{[territoryKey]:roomData[territoryKey],deck:roomData.deck});render();renderHand();renderDeck();$("gameDeckStatus").textContent="対戦準備完了：ナワバリ6枚・手札4枚・山札"+deckCards.length+"枚";log("対戦スタート：ナワバリ6枚、手札4枚を配りました");}catch(e){$("gameDeckStatus").textContent="対戦準備に失敗しました："+(e?.message||String(e));alert("対戦準備に失敗しました："+(e?.message||String(e)));}};
+$("startGame").onclick=async()=>{try{
+ const selected=getSelectedSavedDeck();const saved=selected?.cards;
+ if(!Array.isArray(saved)||saved.length!==20)return alert("対戦に使う20枚デッキを選択してから開始してください");
+ const territoryKey="p"+mySlot+"territory";
+ $("startGame").disabled=true;$("gameDeckStatus").textContent="カードを配布しています…";
+ const [boardSnap,handSnap]=await Promise.all([get(roomRef("board")),get(roomRef("privateHands/"+uid))]);
+ const currentBoard=boardSnap.val()||blankBoard();const currentHand=asCardArray(handSnap.val());
+ if(asCardArray(currentBoard[territoryKey]).length>0||currentHand.length>0){$("gameDeckStatus").textContent="すでに対戦準備が完了しています。";return alert("すでに対戦準備が完了しているようです。盤面と手札を確認してください");}
+ const shuffled=[...saved];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
+ const prepared=shuffled.map((card,i)=>({...card,_territoryId:uid+"_"+Date.now()+"_"+i}));
+ const territory=prepared.slice(0,6);const startingHand=prepared.slice(6,10);const remainingDeck=prepared.slice(10);
+ const deck=Array.isArray(currentBoard.deck)?[...currentBoard.deck]:[20,20];deck[mySlot]=remainingDeck.length;
+ await set(roomRef("board/"+territoryKey),territory);
+ await set(roomRef("privateHands/"+uid),startingHand);
+ await update(roomRef("board"),{deck});
+ const [confirmedBoard,confirmedHand]=await Promise.all([get(roomRef("board")),get(roomRef("privateHands/"+uid))]);
+ roomData=confirmedBoard.val()||blankBoard();hand=asCardArray(confirmedHand.val());deckCards=remainingDeck;deckReady=true;
+ render();renderHand();renderDeck();
+ $("gameDeckStatus").textContent="対戦準備完了：ナワバリ"+asCardArray(roomData[territoryKey]).length+"枚・手札"+hand.length+"枚・山札"+deckCards.length+"枚";
+ if(asCardArray(roomData[territoryKey]).length!==6||hand.length!==4)throw new Error("配布結果を確認できませんでした。もう一度開始してください。");
+ log("対戦スタート：ナワバリ6枚、手札4枚を配りました");
+}catch(e){$("gameDeckStatus").textContent="対戦準備に失敗しました："+(e?.message||String(e));alert("対戦準備に失敗しました："+(e?.message||String(e)));}finally{$("startGame").disabled=false;}};
 
 
 async function handleCardDrop(from,index,to){
