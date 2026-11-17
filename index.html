@@ -373,7 +373,7 @@ let cardImages={
   "マダラサソリ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=191.jpg&width=225",
   "ヤエヤマサソリ": "https://mushijingi.com/images/card/thumbnail.php?height=300&src=192.jpg&width=225"
 };
-const normalizeCardImageName=name=>String(name||"").normalize("NFKC").replace(/[\\s　]+/g,"").toLowerCase();
+const normalizeCardImageName=name=>String(name||"").normalize("NFKC").replace(/\s+/g,"").toLowerCase();
 let normalizedCardImages={};
 function rebuildNormalizedCardImages(){
  normalizedCardImages={};
