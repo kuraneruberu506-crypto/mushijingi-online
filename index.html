@@ -31,7 +31,7 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 #log{max-height:150px;overflow:auto;font-size:12px;color:var(--muted);white-space:pre-wrap}
 #chatlog{height:100px;overflow:auto;background:#111b15;border-radius:8px;padding:8px;font-size:12px}
 @media(max-width:700px){main{padding:9px}.zones{grid-template-columns:repeat(2,1fr)}.boardtop{grid-template-columns:1fr 1fr}.boardtop .center{grid-column:1/-1;grid-row:1}.card{width:68px;min-height:88px}.lobby-grid{grid-template-columns:1fr}header{padding:12px}}
-.card-search-tools{display:flex;gap:8px;flex-wrap:wrap}.card-search-tools input{flex:1;min-width:140px}.card-search-note{font-size:12px;color:var(--muted);line-height:1.6}.decktools{display:grid;gap:10px}.decklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:240px;overflow:auto}.deckitem{display:flex;justify-content:space-between;align-items:center;gap:6px;background:#111b15;border:1px solid var(--line);border-radius:8px;padding:7px;font-size:12px}.deckitem button{padding:4px 7px;font-size:11px}.deckstatus{font-weight:700;color:var(--gold)}
+.card-search-tools{display:flex;gap:8px;flex-wrap:wrap}.card-search-tools input{flex:1;min-width:140px}.card-search-note{font-size:12px;color:var(--muted);line-height:1.6}.decktools{display:grid;gap:10px}.decklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:240px;overflow:auto}.deckitem{display:flex;justify-content:space-between;align-items:center;gap:6px;background:#111b15;border:1px solid var(--line);border-radius:8px;padding:7px;font-size:12px}.deckitem button{padding:4px 7px;font-size:11px}.deckstatus{font-weight:700;color:var(--gold)}.suggestions{display:grid;gap:4px;max-height:180px;overflow:auto}.suggestions button{text-align:left;background:#17231a;font-size:13px;padding:7px}.rarity-tag{font-size:10px;color:#ffe29a;margin-top:2px}
 </style>
 </head>
 <body>
@@ -61,8 +61,8 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 <div class="panel playerarea">
 <div class="panel playerarea" id="deckPanel">
 <div class="area-title"><b>20枚デッキ構築・管理</b><span class="small muted">デッキ内容は自分の端末だけに保存</span></div>
-<div class="row"><input id="deckCardName" class="grow" placeholder="カード名を入力" maxlength="35"><select id="deckCardKind" style="background:#111b15;color:white;border:1px solid var(--line);border-radius:9px;padding:9px"><option>虫</option><option>術</option><option>強化</option><option>その他</option></select><button id="deckAdd">デッキに追加</button></div>
-<div class="row"><input id="deckSearch" class="grow" placeholder="デッキ内のカードを検索"><span class="deckstatus" id="deckCount">0 / 20枚</span></div>
+<div class="row"><input id="deckCardName" class="grow" placeholder="カード名を入力" maxlength="35" autocomplete="off"><select id="deckCardRarity" style="background:#111b15;color:white;border:1px solid var(--line);border-radius:9px;padding:9px"><option value="N">N</option><option value="R">R</option><option value="SR">SR</option><option value="UR">UR</option><option value="LR">LR</option></select><select id="deckCardKind" style="background:#111b15;color:white;border:1px solid var(--line);border-radius:9px;padding:9px"><option>虫</option><option>術</option><option>強化</option><option>その他</option></select><button id="deckAdd">デッキに追加</button></div>
+<div id="deckCardSuggestions" class="suggestions"></div><div class="row"><input id="deckSearch" class="grow" placeholder="デッキ内のカードを検索"><span class="deckstatus" id="deckCount">0 / 20枚</span></div>
 <div id="deckList" class="decklist"></div>
 <div class="controls"><button class="primary" id="deckSave">デッキを保存</button><button id="deckLoad">保存デッキを読み込む</button><button id="deckClear" class="danger">デッキを空にする</button><button id="deckShuffle">山札をシャッフル</button><button id="territorySetup">縄張りを設定</button><button id="effectMemo">効果処理メモ</button></div>
 <div class="small muted">カード名は手入力式です。20枚になったら保存して、対戦中に「山札から1枚引く」を使えます。保存デッキはこの端末・ブラウザ内に保存されます。</div>
@@ -84,12 +84,13 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 <div class="area-title"><b>自分の手札</b><span class="small muted">相手には表示されません（自分の端末のみ）</span></div>
 <div class="zone handzone" id="myHand" data-zone="hand"><div class="cards"></div></div>
 <div class="controls">
-<input id="cardName" placeholder="カード名" maxlength="35" style="width:150px">
+<input id="cardName" placeholder="カード名を入力" maxlength="35" style="width:150px" autocomplete="off"><select id="cardRarity" style="background:#111b15;color:white;border:1px solid var(--line);border-radius:9px;padding:9px"><option value="N">N</option><option value="R">R</option><option value="SR">SR</option><option value="UR">UR</option><option value="LR">LR</option></select>
 <select id="cardKind" style="background:#111b15;color:white;border:1px solid var(--line);border-radius:9px;padding:9px"><option>虫</option><option>術</option><option>強化</option><option>その他</option></select>
 <button class="primary" id="addCard">手札にカード追加</button>
 <button id="draw">山札から1枚引く</button>
 <button id="deckPlus">山札＋1</button><button id="deckMinus">山札－1</button>
 </div>
+<div id="handCardSuggestions" class="suggestions"></div>
 <div class="small muted">カード追加は手札の管理用です。最初に山札枚数・縄張り枚数を設定し、必要なカードを手札に追加してください。</div>
 </div>
 
@@ -375,6 +376,11 @@ let cardImages={
 };
 const normalizeCardImageName=name=>String(name||"").normalize("NFKC").replace(/\s+/g,"").toLowerCase();
 let normalizedCardImages={};
+// 同名カードの別レアリティ画像。確認できた画像だけを個別指定。
+const cardVariantImages={
+ "ハナカマキリ|SR":"https://mushijingi.com/images/card/thumbnail.php?height=300&src=132.jpg&width=225",
+ "ハナカマキリ|UR":"https://mushijingi.com/images/card/thumbnail.php?height=300&src=505.jpg&width=225"
+};
 function rebuildNormalizedCardImages(){
  normalizedCardImages={};
  Object.entries(cardImages).forEach(([name,url])=>{normalizedCardImages[normalizeCardImageName(name)]=url;});
@@ -391,6 +397,17 @@ async function loadAllCardImages(){
  }catch(error){console.warn("カード画像一覧を読み込めませんでした",error);}
 }
 rebuildNormalizedCardImages();
+function setupCardSuggestions(inputId,listId){
+ const input=$(inputId),list=$(listId);if(!input||!list)return;
+ input.addEventListener("input",()=>{
+  const q=normalizeCardImageName(input.value);
+  list.replaceChildren();if(!q)return;
+  const matches=Object.keys(cardImages).filter(n=>normalizeCardImageName(n).includes(q)).slice(0,10);
+  matches.forEach(name=>{const b=document.createElement("button");b.type="button";b.textContent=name;b.onclick=()=>{input.value=name;list.replaceChildren();};list.append(b);});
+ });
+}
+setupCardSuggestions("deckCardName","deckCardSuggestions");
+setupCardSuggestions("cardName","handCardSuggestions");
 function makeCard(c,zone,index){
  const el=document.createElement("div");el.className="card";el.draggable=true;el.dataset.zone=zone;el.dataset.index=index;
  const title=document.createElement("b");title.textContent=c.name;
@@ -398,7 +415,8 @@ function makeCard(c,zone,index){
  const actions=document.createElement("div");
  const move=document.createElement("button");move.textContent="移動";move.onclick=()=>chooseMove(zone,index);
  actions.append(move);
- const imageUrl=cardImages[c.name]||normalizedCardImages[normalizeCardImageName(c.name)];
+ const variantKey=String(c.name||"")+"|"+String(c.rarity||"");
+ const imageUrl=cardVariantImages[variantKey]||cardImages[c.name]||normalizedCardImages[normalizeCardImageName(c.name)];
  if(imageUrl){const img=document.createElement("img");img.src=imageUrl;img.alt=c.name+"のカード画像";img.onerror=()=>{el.classList.remove("has-image");img.remove();el.prepend(title,kind);};el.classList.add("has-image");el.append(img,actions);}
  else{el.append(title,kind,actions);}
  el.addEventListener("dragstart",e=>e.dataTransfer.setData("text/plain",JSON.stringify({zone,index})));
@@ -428,8 +446,8 @@ async function moveCard(from,index,to){
 function deckStorageKey(){return "mushijingi-deck-"+(uid||"guest");}
 function loadLocalDeck(){try{const a=JSON.parse(localStorage.getItem(deckStorageKey())||"[]");deckCards=Array.isArray(a)?a:[];deckReady=deckCards.length===20;}catch{deckCards=[];deckReady=false;}renderDeck();}
 function saveLocalDeck(){try{localStorage.setItem(deckStorageKey(),JSON.stringify(deckCards));}catch(e){log("端末への保存に失敗しました");}}
-function renderDeck(){const q=($("deckSearch")?.value||"").trim().toLowerCase();const list=$("deckList");if(!list)return;const shown=deckCards.map((c,i)=>({...c,_i:i})).filter(c=>!q||c.name.toLowerCase().includes(q)||String(c.kind||"").toLowerCase().includes(q));list.replaceChildren(...shown.map(c=>{const item=document.createElement("div");item.className="deckitem";const label=document.createElement("span");label.textContent=(c._i+1)+". "+c.name+"（"+(c.kind||"カード")+"）";const del=document.createElement("button");del.textContent="削除";del.onclick=()=>{deckCards.splice(c._i,1);deckReady=false;renderDeck();saveLocalDeck();};item.append(label,del);return item;}));$("deckCount").textContent=deckCards.length+" / 20枚";}
-$("deckAdd").onclick=()=>{const name=$("deckCardName").value.trim();if(!name)return;if(deckCards.length>=20)return alert("デッキは20枚までです");deckCards.push({name,kind:$("deckCardKind").value});$("deckCardName").value="";deckReady=deckCards.length===20;renderDeck();};
+function renderDeck(){const q=($("deckSearch")?.value||"").trim().toLowerCase();const list=$("deckList");if(!list)return;const shown=deckCards.map((c,i)=>({...c,_i:i})).filter(c=>!q||c.name.toLowerCase().includes(q)||String(c.kind||"").toLowerCase().includes(q));list.replaceChildren(...shown.map(c=>{const item=document.createElement("div");item.className="deckitem";const label=document.createElement("span");label.textContent=(c._i+1)+". "+c.name+"（"+(c.rarity||"N")+"・"+(c.kind||"カード")+"）";const del=document.createElement("button");del.textContent="削除";del.onclick=()=>{deckCards.splice(c._i,1);deckReady=false;renderDeck();saveLocalDeck();};item.append(label,del);return item;}));$("deckCount").textContent=deckCards.length+" / 20枚";}
+$("deckAdd").onclick=()=>{const name=$("deckCardName").value.trim();if(!name)return;if(deckCards.length>=20)return alert("デッキは20枚までです");deckCards.push({name,rarity:$("deckCardRarity").value,kind:$("deckCardKind").value});$("deckCardName").value="";$("deckCardSuggestions").replaceChildren();deckReady=deckCards.length===20;renderDeck();};
 $("deckSearch").oninput=renderDeck;
 $("deckSave").onclick=()=>{if(deckCards.length!==20)return alert("デッキは20枚にしてください（現在"+deckCards.length+"枚）");saveLocalDeck();deckReady=true;alert("20枚デッキをこの端末に保存しました");};
 $("deckLoad").onclick=()=>{try{const a=JSON.parse(localStorage.getItem(deckStorageKey())||"null");if(!Array.isArray(a)||a.length!==20)return alert("保存された20枚デッキがありません");deckCards=a;deckReady=true;roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=20;saveBoard();renderDeck();log("保存デッキを山札に読み込みました");}catch{alert("保存デッキを読み込めませんでした");}};
@@ -444,7 +462,7 @@ document.querySelectorAll(".zone").forEach(z=>{
 });
 $("create").onclick=createRoom;$("join").onclick=joinRoom;
 $("copyRoom").onclick=()=>navigator.clipboard?.writeText(roomId);
-$("addCard").onclick=async()=>{const name=$("cardName").value.trim();if(!name)return;hand.push({name,kind:$("cardKind").value});$("cardName").value="";await set(roomRef("privateHands/"+uid),hand);};
+$("addCard").onclick=async()=>{const name=$("cardName").value.trim();if(!name)return;hand.push({name,rarity:$("cardRarity").value,kind:$("cardKind").value});$("cardName").value="";$("handCardSuggestions").replaceChildren();await set(roomRef("privateHands/"+uid),hand);};
 $("draw").onclick=async()=>{const deck=roomData.deck||[20,20];if(!deckReady||deckCards.length===0)return log("先に20枚デッキを読み込んでください");if(deck[mySlot]<=0||deckCards.length===0)return log("山札がありません");const c=deckCards.shift();hand.push(c);await set(roomRef("privateHands/"+uid),hand);deck[mySlot]=deckCards.length;roomData.deck=deck;saveLocalDeck();await saveBoard();log("山札から「"+c.name+"」を引きました");};
 $("deckPlus").onclick=async()=>{roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]++;await saveBoard()};
 $("deckMinus").onclick=async()=>{roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=Math.max(0,roomData.deck[mySlot]-1);await saveBoard()};
