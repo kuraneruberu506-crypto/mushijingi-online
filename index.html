@@ -119,7 +119,8 @@ const firebaseConfig = {
 };
 
 const $ = id => document.getElementById(id);
-let db, auth, uid, roomId, mySlot, roomData={}, hand=[], unsub=[];\nlet deckCards=[], deckReady=false;
+let db, auth, uid, roomId, mySlot, roomData={}, hand=[], unsub=[];
+let deckCards=[], deckReady=false;
 const blankBoard = () => ({p0field:[],p0territory:[],p0grave:[],p0mana:[],p1field:[],p1territory:[],p1grave:[],p1mana:[],deck:[20,20],turn:0,logs:[]});
 const cfgReady = !firebaseConfig.apiKey.startsWith("YOUR_");
 if(cfgReady){
