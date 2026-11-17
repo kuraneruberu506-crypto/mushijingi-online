@@ -677,7 +677,7 @@ document.querySelectorAll(".zone[data-zone]").forEach(z=>{
 });
 $("create").onclick=createRoom;$("join").onclick=joinRoom;
 $("copyRoom").onclick=()=>navigator.clipboard?.writeText(roomId);
-$("draw").onclick=async()=>{const deck=roomData.deck||[20,20];if(!deckReady||deckCards.length===0)return log("先に20枚デッキを読み込んでください");if(deck[mySlot]<=0||deckCards.length===0)return log("山札がありません");const c=deckCards.shift();hand.push(c);await set(roomRef("privateHands/"+uid),hand);deck[mySlot]=deckCards.length;roomData.deck=deck;await saveBoard();log("山札から「"+c.name+"」を引きました");};
+$("draw").onclick=async()=>{if(!deckReady||deckCards.length===0)return log("先に20枚デッキを読み込んでください");const deck=Array.isArray(roomData.deck)?[...roomData.deck]:[20,20];if(Number(deck[mySlot]??deckCards.length)<=0)return log("山札がありません");const c=deckCards.shift();hand=[...hand,c];try{await set(roomRef("privateHands/"+uid),hand);deck[mySlot]=deckCards.length;await update(roomRef("board"),{deck});roomData.deck=deck;render();renderHand();log("山札から「"+c.name+"」を引きました");}catch(e){deckCards.unshift(c);hand=hand.slice(0,-1);log("ドローに失敗しました："+(e?.message||String(e)));}};
 $("turn").onclick=async()=>{roomData.turn=1-(roomData.turn||0);roomData.logs=roomData.logs||[];roomData.logs.push(("プレイヤー"+(mySlot+1))+"がターン交代");await saveBoard()};
 $("coin").onclick=async()=>{roomData.turn=Math.random()<.5?0:1;roomData.logs=roomData.logs||[];roomData.logs.push("先攻："+$("p"+roomData.turn+"name").textContent);await saveBoard()};
 loadAllCardImages();
