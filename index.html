@@ -653,7 +653,7 @@ $("deckClear").onclick=()=>{if(!confirm("デッキを空にしますか？"))ret
 $("startGame").onclick=async()=>{try{const selected=getSelectedSavedDeck();const saved=selected?.cards;if(!Array.isArray(saved)||saved.length!==20)return alert("対戦に使う20枚デッキを選択してから開始してください");const territoryKey="p"+mySlot+"territory";if((roomData[territoryKey]||[]).length>0||hand.length>0)return alert("すでに対戦準備が完了しているようです。盤面と手札を確認してください");const shuffled=[...saved];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}roomData={...blankBoard(),...roomData};roomData[territoryKey]=shuffled.slice(0,6);hand=shuffled.slice(6,10);deckCards=shuffled.slice(10);deckReady=true;roomData.deck=Array.isArray(roomData.deck)?[...roomData.deck]:[20,20];roomData.deck[mySlot]=deckCards.length;privateReveals=[];render();renderHand();$("gameDeckStatus").textContent="配布中：ナワバリ6枚・手札4枚";await set(roomRef("privateTerritoryReveals/"+uid),[]);await set(roomRef("privateHands/"+uid),hand);await saveBoard();await set(roomRef("board/deck/"+mySlot),deckCards.length);render();renderHand();renderDeck();$("gameDeckStatus").textContent="対戦準備完了：ナワバリ6枚・手札4枚・山札"+deckCards.length+"枚";log("対戦スタート：ナワバリ6枚、手札4枚を配りました");}catch(e){$("gameDeckStatus").textContent="対戦準備に失敗しました："+(e?.message||String(e));alert("対戦準備に失敗しました："+(e?.message||String(e)));}};
 
 
-async async function handleCardDrop(from,index,to){
+async function handleCardDrop(from,index,to){
  if(!to||from===to)return;
  if(from==="p"+mySlot+"territory"&&to==="hand"){await collectTerritoryCard(index);return;}
  await moveCard(from,index,to);
