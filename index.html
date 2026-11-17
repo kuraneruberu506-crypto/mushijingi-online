@@ -217,7 +217,7 @@ $("deckClear").onclick=()=>{if(!confirm("デッキを空にしますか？"))ret
 $("deckShuffle").onclick=()=>{if(!deckReady||deckCards.length!==20)return alert("先に20枚デッキを保存してください");for(let i=deckCards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deckCards[i],deckCards[j]]=[deckCards[j],deckCards[i]];}saveLocalDeck();log("自分の山札をシャッフルしました");};
 $("territorySetup").onclick=async()=>{if(!deckReady||deckCards.length===0)return alert("先にデッキを読み込んでください");const raw=prompt("縄張りに置く枚数を入力してください","4");if(raw===null)return;const n=Number(raw);if(!Number.isInteger(n)||n<1||n>deckCards.length)return alert("山札にある枚数以内の整数を入力してください");const zone="p"+mySlot+"territory";roomData[zone]=roomData[zone]||[];for(let i=0;i<n;i++)roomData[zone].push(deckCards.shift());roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=deckCards.length;saveLocalDeck();await saveBoard();log("縄張りを"+n+"枚設定しました");};
 $("effectMemo").onclick=()=>{const note=prompt("処理した効果や内容を入力してください");if(!note)return;roomData.logs=roomData.logs||[];roomData.logs.push("効果メモ："+note);saveBoard();};
-\ndocument.querySelectorAll(".zone").forEach(z=>{
+document.querySelectorAll(".zone").forEach(z=>{
  z.addEventListener("dragover",e=>{e.preventDefault();z.classList.add("over")});
  z.addEventListener("dragleave",()=>z.classList.remove("over"));
  z.addEventListener("drop",e=>{e.preventDefault();z.classList.remove("over");try{const d=JSON.parse(e.dataTransfer.getData("text/plain"));moveCard(d.zone,d.index,z.dataset.zone)}catch{}});
