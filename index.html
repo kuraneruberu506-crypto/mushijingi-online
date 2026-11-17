@@ -457,11 +457,13 @@ function makeCard(c,zone,index){
  const rarity=document.createElement("span");rarity.className="rarity-badge";rarity.textContent=c.rarity||"N";
  const move=document.createElement("button");move.textContent="移動";move.onclick=()=>chooseMove(zone,index);
  actions.append(move);
+ if(zone==="hand"&&c.kind==="強化"){const attach=document.createElement("button");attach.textContent="虫につける";attach.onclick=()=>chooseAttachTarget(index);actions.append(attach);}
  const variantKey=String(c.name||"")+"|"+String(c.rarity||"");
  const imageUrl=cardVariantImages[variantKey]||cardImages[c.name]||normalizedCardImages[normalizeCardImageName(c.name)];
  if(String(zone).includes("territory")&&!(zone==="p"+mySlot+"territory"&&privateReveals.includes(index))){const back=document.createElement("img");back.src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg";back.alt="蟲神器カードの裏面";back.onerror=()=>{back.remove();el.classList.remove("has-image");el.textContent="蟲神器";};el.classList.add("has-image","territory-back");el.append(back,actions);}
  else if(imageUrl){const img=document.createElement("img");img.src=imageUrl;img.alt=c.name+"のカード画像";img.onerror=()=>{el.classList.remove("has-image");img.remove();el.prepend(title,kind);};el.classList.add("has-image");el.append(img,rarity,actions);}
  else{el.append(title,rarity,kind,actions);}
+ if(Array.isArray(c.attachments)&&c.attachments.length){const attached=document.createElement("div");attached.className="attached-cards";attached.textContent="強化："+c.attachments.map(x=>x.name).join("、");Object.assign(attached.style,{fontSize:"11px",padding:"4px",marginTop:"4px",background:"rgba(245,215,110,.18)",borderRadius:"5px",whiteSpace:"normal"});el.append(attached);}
  let dragPreview=null;
  const createDragPreview=()=>{const preview=el.cloneNode(true);preview.removeAttribute("draggable");preview.style.cssText="position:fixed;left:-10000px;top:0;width:"+Math.max(72,el.getBoundingClientRect().width)+"px;opacity:1;pointer-events:none;z-index:100000;border:2px solid #f5d76e;box-shadow:0 8px 24px rgba(0,0,0,.55);transform:rotate(-3deg);";return preview;};
  el.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/plain",JSON.stringify({zone,index}));e.dataTransfer.effectAllowed="move";dragPreview=createDragPreview();document.body.append(dragPreview);e.dataTransfer.setDragImage(dragPreview,Math.min(55,dragPreview.offsetWidth/2),35);});
@@ -475,6 +477,17 @@ function makeCard(c,zone,index){
 }
 function renderHand(){
  const box=$("myHand").querySelector(".cards");box.replaceChildren(...hand.map((c,i)=>makeCard(c,"hand",i)));
+}
+function chooseAttachTarget(handIndex){
+ const insects=(roomData["p"+mySlot+"field"]||[]).map((card,index)=>({card,index})).filter(x=>x.card.kind==="虫");
+ if(!insects.length){alert("自分の場に虫カードがありません。");return;}
+ const old=document.getElementById("attachPicker");if(old)old.remove();
+ const picker=document.createElement("div");picker.id="attachPicker";
+ Object.assign(picker.style,{position:"fixed",inset:"0",zIndex:"10000",background:"rgba(0,0,0,.72)",display:"flex",alignItems:"center",justifyContent:"center",padding:"18px"});
+ const panel=document.createElement("div");Object.assign(panel.style,{background:"#173b2b",border:"1px solid #6b9b7b",borderRadius:"14px",padding:"18px",width:"min(100%,360px)",maxHeight:"80vh",overflowY:"auto",color:"#fff"});
+ const heading=document.createElement("h3");heading.textContent="強化カードをつける虫を選択";panel.append(heading);
+ insects.forEach(({card,index})=>{const b=document.createElement("button");b.type="button";b.textContent=card.name;Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",textAlign:"left"});b.onclick=async()=>{picker.remove();const enhancement=hand.splice(handIndex,1)[0];if(!enhancement)return;const target=(roomData["p"+mySlot+"field"]||[])[index];if(!target)return;target.attachments=Array.isArray(target.attachments)?target.attachments:[];target.attachments.push(enhancement);render();renderHand();await set(roomRef("privateHands/"+uid),hand);await saveBoard();};panel.append(b);});
+ const cancel=document.createElement("button");cancel.type="button";cancel.textContent="キャンセル";cancel.style.width="100%";cancel.onclick=()=>picker.remove();panel.append(cancel);picker.append(panel);document.body.append(picker);
 }
 function chooseMove(from,index){
  const opts=mySlot===0?["p0field","p0territory","p0grave","p0mana","hand"]:["p1field","p1territory","p1grave","p1mana","hand"];
