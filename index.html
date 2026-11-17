@@ -128,7 +128,6 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 <div class="zone handzone" id="myHand" data-zone="hand"><div class="cards"></div></div>
 <div class="controls">
 <button id="draw">山札から1枚引く</button>
-<button id="deckPlus">山札＋1</button><button id="deckMinus">山札－1</button>
 </div>
 <div class="small muted">手札には「山札から1枚引く」でカードを追加できます。</div>
 </div>
@@ -568,8 +567,6 @@ document.querySelectorAll(".zone").forEach(z=>{
 $("create").onclick=createRoom;$("join").onclick=joinRoom;
 $("copyRoom").onclick=()=>navigator.clipboard?.writeText(roomId);
 $("draw").onclick=async()=>{const deck=roomData.deck||[20,20];if(!deckReady||deckCards.length===0)return log("先に20枚デッキを読み込んでください");if(deck[mySlot]<=0||deckCards.length===0)return log("山札がありません");const c=deckCards.shift();hand.push(c);await set(roomRef("privateHands/"+uid),hand);deck[mySlot]=deckCards.length;roomData.deck=deck;await saveBoard();log("山札から「"+c.name+"」を引きました");};
-$("deckPlus").onclick=async()=>{roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]++;await saveBoard()};
-$("deckMinus").onclick=async()=>{roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=Math.max(0,roomData.deck[mySlot]-1);await saveBoard()};
 $("turn").onclick=async()=>{roomData.turn=1-(roomData.turn||0);roomData.logs=roomData.logs||[];roomData.logs.push(("プレイヤー"+(mySlot+1))+"がターン交代");await saveBoard()};
 $("coin").onclick=async()=>{roomData.turn=Math.random()<.5?0:1;roomData.logs=roomData.logs||[];roomData.logs.push("先攻："+$("p"+roomData.turn+"name").textContent);await saveBoard()};
 loadAllCardImages();
