@@ -442,7 +442,11 @@ function makeCard(c,zone,index){
  if(String(zone).includes("territory")&&!(zone==="p"+mySlot+"territory"&&privateReveals.includes(index))){const back=document.createElement("img");back.src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg";back.alt="蟲神器カードの裏面";back.onerror=()=>{back.remove();el.classList.remove("has-image");el.textContent="蟲神器";};el.classList.add("has-image","territory-back");el.append(back,actions);}
  else if(imageUrl){const img=document.createElement("img");img.src=imageUrl;img.alt=c.name+"のカード画像";img.onerror=()=>{el.classList.remove("has-image");img.remove();el.prepend(title,kind);};el.classList.add("has-image");el.append(img,rarity,actions);}
  else{el.append(title,rarity,kind,actions);}
- el.addEventListener("dragstart",e=>e.dataTransfer.setData("text/plain",JSON.stringify({zone,index})));
+ el.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/plain",JSON.stringify({zone,index}));e.dataTransfer.effectAllowed="move";});
+ let touchStart=null;
+ el.addEventListener("touchstart",e=>{if(e.target.closest("button"))return;const t=e.touches[0];touchStart={x:t.clientX,y:t.clientY,moved:false};},{passive:true});
+ el.addEventListener("touchmove",e=>{if(!touchStart)return;const t=e.touches[0];if(Math.abs(t.clientX-touchStart.x)+Math.abs(t.clientY-touchStart.y)>12){touchStart.moved=true;e.preventDefault();}},{passive:false});
+ el.addEventListener("touchend",e=>{if(!touchStart)return;const moved=touchStart.moved;touchStart=null;if(!moved)return;const t=e.changedTouches[0];const target=document.elementFromPoint(t.clientX,t.clientY);const dropZone=target?.closest(".zone[data-zone]");if(dropZone&&dropZone.dataset.zone!==zone)moveCard(zone,index,dropZone.dataset.zone);});
  return el;
 }
 function renderHand(){
@@ -452,10 +456,13 @@ function chooseMove(from,index){
  const opts=mySlot===0?["p0field","p0territory","p0grave","p0mana","hand"]:["p1field","p1territory","p1grave","p1mana","hand"];
  if(from==="p"+mySlot+"territory")opts.push("revealToHand");
  const labels={p0field:"自分の場",p0territory:"自分のナワバリ",p0grave:"自分の捨て札",p0mana:"自分の餌場",p1field:"相手の場",p1territory:"相手のナワバリ",p1grave:"相手の捨て札",p1mana:"相手の餌場",hand:"自分の手札",revealToHand:"表向きにして手札に加える（自分だけに表示）"};
- const choice=prompt("移動先を番号で選択\n"+opts.map((x,i)=>(i+1)+": "+labels[x]).join("\n"));
- const dest=opts[Number(choice)-1];
- if(dest==="revealToHand"){moveCard(from,index,"hand");return;}
- if(dest)moveCard(from,index,dest);
+ const old=document.getElementById("movePicker");if(old)old.remove();
+ const picker=document.createElement("div");picker.id="movePicker";
+ Object.assign(picker.style,{position:"fixed",inset:"0",zIndex:"9999",background:"rgba(0,0,0,.72)",display:"flex",alignItems:"center",justifyContent:"center",padding:"18px"});
+ const panel=document.createElement("div");Object.assign(panel.style,{background:"#173b2b",border:"1px solid #6b9b7b",borderRadius:"14px",padding:"18px",width:"min(100%,360px)",maxHeight:"80vh",overflowY:"auto",color:"#fff"});
+ const heading=document.createElement("h3");heading.textContent="移動先を選択";panel.append(heading);
+ opts.forEach(dest=>{const b=document.createElement("button");b.type="button";b.textContent=labels[dest];Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",whiteSpace:"normal",textAlign:"left"});b.onclick=()=>{picker.remove();moveCard(from,index,dest==="revealToHand"?"hand":dest);};panel.append(b);});
+ const cancel=document.createElement("button");cancel.type="button";cancel.textContent="キャンセル";cancel.style.width="100%";cancel.onclick=()=>picker.remove();panel.append(cancel);picker.append(panel);picker.addEventListener("click",e=>{if(e.target===picker)picker.remove();});document.body.append(picker);
 }
 async function moveCard(from,index,to){
  if(from===to)return;
