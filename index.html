@@ -157,6 +157,7 @@ if(cfgReady){
  }catch(e){$("status").textContent="接続エラー";$("lobbyMsg").textContent="Firebase接続失敗："+(e?.message||String(e));}
 }else{$("lobbyMsg").textContent="※利用開始にはFirebaseの設定が必要です。下のREADMEを確認してください。";}
 
+function asCardArray(value){if(Array.isArray(value))return value.filter(x=>x!=null);if(value&&typeof value==="object")return Object.keys(value).sort((a,b)=>Number(a)-Number(b)).map(k=>value[k]).filter(x=>x!=null);return []}
 function msg(t){$("lobbyMsg").textContent=t}
 function log(t){}
 function cleanup(){unsub.forEach(f=>f());unsub=[]}
@@ -198,7 +199,7 @@ function enterGame(){
  cleanup();
  unsub.push(onValue(roomRef("players"),s=>{const p=Object.values(s.val()||{}).sort((a,b)=>a.slot-b.slot);$("p0name").textContent=p.find(x=>x.slot===0)?.name||"プレイヤー1";$("p1name").textContent=p.find(x=>x.slot===1)?.name||"参加待ち";}));
  unsub.push(onValue(roomRef("board"),s=>{roomData=s.val()||blankBoard();render();}));
- unsub.push(onValue(roomRef("privateHands/"+uid),s=>{hand=s.val()||[];renderHand();set(roomRef("board/handCounts/"+mySlot),hand.length).catch(e=>console.error("手札枚数の同期に失敗",e));}));
+ unsub.push(onValue(roomRef("privateHands/"+uid),s=>{hand=asCardArray(s.val());renderHand();set(roomRef("board/handCounts/"+mySlot),hand.length).catch(e=>console.error("手札枚数の同期に失敗",e));}));
  unsub.push(onValue(roomRef("privateTerritoryReveals/"+uid),s=>{privateReveals=Array.isArray(s.val())?s.val():[];render();}));
 
 }
@@ -210,7 +211,7 @@ function render(){
  if($("opponentDeckNearHand"))$("opponentDeckNearHand").textContent=opponentDeck;
  renderOpponentHand();
  $("turnLabel").textContent="現在のターン："+($("p"+(roomData.turn||0)+"name").textContent);
- document.querySelectorAll(".zone[data-zone]").forEach(z=>{if(z.dataset.zone==="hand")return;const arr=roomData[z.dataset.zone]||[];z.querySelector(".cards").replaceChildren(...arr.map((c,idx)=>makeCard(c,z.dataset.zone,idx)));});
+ document.querySelectorAll(".zone[data-zone]").forEach(z=>{if(z.dataset.zone==="hand")return;const arr=asCardArray(roomData[z.dataset.zone]);z.querySelector(".cards").replaceChildren(...arr.map((c,idx)=>makeCard(c,z.dataset.zone,idx)));});
 
 }
 let cardImages={
@@ -519,24 +520,34 @@ async function collectTerritoryCard(index){
   const [territorySnap,handSnap,revealSnap]=await Promise.all([
    get(roomRef("board/"+zone)),get(roomRef("privateHands/"+uid)),get(roomRef("privateTerritoryReveals/"+uid))
   ]);
-  const territory=Array.isArray(territorySnap.val())?territorySnap.val():[];
+  const territory=asCardArray(territorySnap.val());
   const cardIndex=Number(index);
   if(!Number.isInteger(cardIndex)||cardIndex<0||cardIndex>=territory.length){
    log("選択したナワバリのカードが見つかりません。もう一度選択してください。");
    return;
   }
-  const nextTerritory=[...territory];
-  const card=nextTerritory.splice(cardIndex,1)[0];
-  const nextHand=Array.isArray(handSnap.val())?[...handSnap.val()]:[];
+  const card=territory[cardIndex];
+  const nextHand=asCardArray(handSnap.val());
   nextHand.push({...card,faceDown:false});
-  const reveals=Array.isArray(revealSnap.val())?revealSnap.val():[];
-  const nextReveals=reveals.filter(i=>Number(i)!==cardIndex).map(i=>Number(i)>cardIndex?Number(i)-1:Number(i));
-  // 手札への追加を先に確定し、次にナワバリから取り除く。通信失敗時のカード消失を防ぐ。
+  // 先に手札へ保存し、成功後にナワバリから対象1枚だけをトランザクションで取り除く。
   await set(roomRef("privateHands/"+uid),nextHand);
-  await set(roomRef("board/"+zone),nextTerritory);
+  const result=await runTransaction(roomRef("board/"+zone),current=>{
+   const currentCards=asCardArray(current);
+   if(cardIndex>=currentCards.length)return;
+   currentCards.splice(cardIndex,1);
+   return currentCards;
+  });
+  if(!result.committed){
+   await set(roomRef("privateHands/"+uid),asCardArray(handSnap.val()));
+   log("ナワバリの更新に失敗しました。もう一度お試しください。");
+   return;
+  }
+  const latestTerritory=asCardArray(result.snapshot.val());
+  const reveals=asCardArray(revealSnap.val());
+  const nextReveals=reveals.filter(i=>Number(i)!==cardIndex).map(i=>Number(i)>cardIndex?Number(i)-1:Number(i));
   await set(roomRef("privateTerritoryReveals/"+uid),nextReveals);
   hand=nextHand;
-  roomData[zone]=nextTerritory;
+  roomData[zone]=latestTerritory;
   privateReveals=nextReveals;
   render();
   renderHand();
@@ -560,8 +571,8 @@ async function moveCard(from,index,to){
   if(from!=="hand"&&to!=="hand"){
    const result=await runTransaction(roomRef("board"),current=>{
     if(!current)return;
-    const source=Array.isArray(current[from])?[...current[from]]:[];
-    const target=Array.isArray(current[to])?[...current[to]]:[];
+    const source=asCardArray(current[from]);
+    const target=asCardArray(current[to]);
     const cardIndex=Number(index);
     if(!Number.isInteger(cardIndex)||cardIndex<0||cardIndex>=source.length)return;
     const moved=source.splice(cardIndex,1)[0];
@@ -586,7 +597,7 @@ async function moveCard(from,index,to){
   let latestHand=[];
   if(from==="hand"||to==="hand"){
    const handSnap=await get(roomRef("privateHands/"+uid));
-   latestHand=Array.isArray(handSnap.val())?handSnap.val():[];
+   latestHand=asCardArray(handSnap.val());
   }
   let moved;
   let revealsChanged=false;
@@ -594,10 +605,10 @@ async function moveCard(from,index,to){
    moved=latestHand.splice(index,1)[0];
    if(!moved)return;
    if(to==="hand")return;
-   latestBoard[to]=Array.isArray(latestBoard[to])?latestBoard[to]:[];
+   latestBoard[to]=asCardArray(latestBoard[to]);
    latestBoard[to].push(moved);
   }else{
-   latestBoard[from]=Array.isArray(latestBoard[from])?latestBoard[from]:[];
+   latestBoard[from]=asCardArray(latestBoard[from]);
    moved=latestBoard[from].splice(index,1)[0];
    if(!moved)return;
    if(from==="p"+mySlot+"territory"){
@@ -608,7 +619,7 @@ async function moveCard(from,index,to){
     moved.faceDown=false;
     latestHand.push(moved);
    }else{
-    latestBoard[to]=Array.isArray(latestBoard[to])?latestBoard[to]:[];
+    latestBoard[to]=asCardArray(latestBoard[to]);
     latestBoard[to].push(moved);
    }
   }
