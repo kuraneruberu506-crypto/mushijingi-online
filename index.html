@@ -27,7 +27,7 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 .zone.over{background:#314d37;outline:2px solid var(--green)}
 .playerarea{display:grid;gap:9px}.area-title{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .controls{display:flex;gap:7px;flex-wrap:wrap}.controls button{font-size:13px;padding:8px}
-.hands-header{display:grid;grid-template-columns:1fr 1fr;gap:10px}.hand-player{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#111b15;border:1px solid var(--line);border-radius:10px;padding:8px;min-width:0}.hand-player-title{display:flex;flex-direction:column;gap:4px}.hand-back-preview{width:42px;height:60px;object-fit:fill;border-radius:4px;border:1px solid #9b8955;flex:0 0 auto}.hand-player .small{font-size:11px}.handzone{min-height:140px}.handzone .card{width:82px;min-height:112px}
+.hands-header{display:grid;grid-template-columns:1fr 1fr;gap:10px}.hand-player{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#111b15;border:1px solid var(--line);border-radius:10px;padding:8px;min-width:0}.hand-player-title{display:flex;flex-direction:column;gap:4px}.hand-back-preview{width:42px;height:60px;object-fit:fill;border-radius:4px;border:1px solid #9b8955;flex:0 0 auto}.hand-player .small{font-size:11px}.handzone{min-height:140px}.handzone .card{width:82px;min-height:112px}.opponent-hand-zone{min-height:112px}.opponent-hand-zone .cards{display:flex;gap:6px;flex-wrap:wrap}.opponent-hand-back{width:52px;height:74px;object-fit:fill;border:1px solid #9b8955;border-radius:5px;flex:0 0 auto}
 #log{max-height:150px;overflow:auto;font-size:12px;color:var(--muted);white-space:pre-wrap}
 #chatlog{height:100px;overflow:auto;background:#111b15;border-radius:8px;padding:8px;font-size:12px}
 @media(max-width:700px){
@@ -38,7 +38,7 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
  .zones{grid-template-columns:1fr;gap:6px}.zone{min-width:0;min-height:132px;padding:6px;border-radius:8px}.zone h3{font-size:11px;margin-bottom:6px}.zone .cards{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:5px;padding-bottom:4px;min-height:100px;align-items:flex-start;scrollbar-width:thin}
  .card{flex:0 0 66px;width:66px;min-height:94px;padding:4px;font-size:10px}.card.has-image img,.card.territory-back img{height:94px;min-height:94px}.card.has-image button,.card.territory-back button{font-size:9px;padding:3px}.card b{font-size:10px}
  .deck-section{padding:10px}.deck-section-title{align-items:flex-start;flex-direction:column;gap:4px}.deck-actions{grid-template-columns:1fr 1fr}.deck-actions button{font-size:12px;min-height:44px}.deck-list-heading{align-items:flex-start;flex-direction:column;gap:3px}.decklist{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;max-height:none}.deck-card .deck-name{font-size:10px;min-height:28px}.deck-card .deck-thumb{max-height:150px}.deck-card button{font-size:10px;padding:6px 3px}
- .handzone{min-height:132px}.handzone .cards{overflow-x:auto;flex-wrap:nowrap}.handzone .card{flex:0 0 76px;width:76px;min-height:104px}
+ .handzone{min-height:132px}.opponent-hand-zone{min-height:104px}.opponent-hand-zone .cards{flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;min-height:76px;align-items:flex-start}.opponent-hand-back{width:45px;height:66px;flex:0 0 45px}.handzone .cards{overflow-x:auto;flex-wrap:nowrap}.handzone .card{flex:0 0 76px;width:76px;min-height:104px}
  .area-title{align-items:flex-start;flex-wrap:wrap;gap:5px}.area-title .small{font-size:10px}.controls{gap:5px}.controls button{font-size:11px;padding:8px 6px}
  #gameDeckPanel .controls button{flex:1 1 42%}#log{max-height:110px;font-size:11px}#chatlog{height:85px;font-size:11px}
  .lobby-grid{grid-template-columns:1fr}#lobby{margin:10px auto;padding:10px}
@@ -102,6 +102,7 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 </div>
 <div class="area-title"><b>盤面</b><span class="small muted">カードをドラッグ、またはカードの移動先ボタンで操作</span></div>
 <div class="zones">
+<div class="zone opponent-hand-zone" id="opponentHandZone"><h3>対戦相手の手札</h3><div class="cards"></div></div>
 <div class="zone" data-zone="p0field"><h3>プレイヤー1：場</h3><div class="cards"></div></div>
 <div class="zone" data-zone="p0territory"><h3>プレイヤー1：縄張り</h3><div class="cards"></div></div>
 <div class="zone" data-zone="p1field"><h3>プレイヤー2：場</h3><div class="cards"></div></div>
@@ -151,7 +152,7 @@ const firebaseConfig = {
 const $ = id => document.getElementById(id);
 let db, auth, uid, roomId, mySlot, roomData={}, hand=[], unsub=[];
 let deckCards=[], deckReady=false, privateReveals=[];
-const blankBoard = () => ({p0field:[],p0territory:[],p0grave:[],p0mana:[],p1field:[],p1territory:[],p1grave:[],p1mana:[],deck:[20,20],turn:0,logs:[]});
+const blankBoard = () => ({p0field:[],p0territory:[],p0grave:[],p0mana:[],p1field:[],p1territory:[],p1grave:[],p1mana:[],deck:[20,20],handCounts:[0,0],turn:0,logs:[]});
 const cfgReady = !firebaseConfig.apiKey.startsWith("YOUR_");
 if(cfgReady){
  try{
@@ -198,9 +199,9 @@ async function joinRoom(){
 }
 function arrangeBattleZones(){
  const opponent=1-mySlot, own=mySlot;
- const order=[["p"+opponent+"mana","対戦相手の餌場"],["p"+opponent+"territory","対戦相手のナワバリ"],["p"+opponent+"field","対戦相手の場"],["p"+own+"field","自分の場"],["p"+own+"territory","自分のナワバリ"],["p"+own+"mana","自分の餌場"]];
+ const order=[["opponentHandZone","対戦相手の手札"],["p"+opponent+"mana","対戦相手の餌場"],["p"+opponent+"territory","対戦相手のナワバリ"],["p"+opponent+"field","対戦相手の場"],["p"+own+"field","自分の場"],["p"+own+"territory","自分のナワバリ"],["p"+own+"mana","自分の餌場"]];
  const container=document.querySelector(".zones");
- for(const [zoneId,label] of order){const zone=container.querySelector(`[data-zone="${zoneId}"]`);if(zone){zone.querySelector("h3").textContent=label;container.appendChild(zone);}}
+ for(const [zoneId,label] of order){const zone=zoneId==="opponentHandZone"?$("opponentHandZone"):container.querySelector(`[data-zone="${zoneId}"]`);if(zone){zone.querySelector("h3").textContent=label;container.appendChild(zone);}}
 }
 function enterGame(){
  $("lobby").classList.add("hidden");$("game").classList.remove("hidden");$("roomCode").textContent=roomId;
@@ -208,7 +209,7 @@ function enterGame(){
  cleanup();
  unsub.push(onValue(roomRef("players"),s=>{const p=Object.values(s.val()||{}).sort((a,b)=>a.slot-b.slot);$("p0name").textContent=p.find(x=>x.slot===0)?.name||"プレイヤー1";$("p1name").textContent=p.find(x=>x.slot===1)?.name||"参加待ち";}));
  unsub.push(onValue(roomRef("board"),s=>{roomData=s.val()||blankBoard();render();}));
- unsub.push(onValue(roomRef("privateHands/"+uid),s=>{hand=s.val()||[];renderHand();}));
+ unsub.push(onValue(roomRef("privateHands/"+uid),s=>{hand=s.val()||[];renderHand();set(roomRef("board/handCounts/"+mySlot),hand.length).catch(e=>console.error("手札枚数の同期に失敗",e));}));
  unsub.push(onValue(roomRef("privateTerritoryReveals/"+uid),s=>{privateReveals=Array.isArray(s.val())?s.val():[];render();}));
 
 }
@@ -218,6 +219,7 @@ function render(){
  const ownDeck=roomData.deck?.[mySlot]??0, opponentDeck=roomData.deck?.[1-mySlot]??0;
  if($("myDeckNearHand"))$("myDeckNearHand").textContent=ownDeck;
  if($("opponentDeckNearHand"))$("opponentDeckNearHand").textContent=opponentDeck;
+ renderOpponentHand();
  $("turnLabel").textContent="現在のターン："+($("p"+(roomData.turn||0)+"name").textContent);
  document.querySelectorAll(".zone[data-zone]").forEach(z=>{if(z.dataset.zone==="hand")return;const arr=roomData[z.dataset.zone]||[];z.querySelector(".cards").replaceChildren(...arr.map((c,idx)=>makeCard(c,z.dataset.zone,idx)));});
 
@@ -477,6 +479,11 @@ function makeCard(c,zone,index){
 }
 function renderHand(){
  const box=$("myHand").querySelector(".cards");box.replaceChildren(...hand.map((c,i)=>makeCard(c,"hand",i)));
+}
+function renderOpponentHand(){
+ const count=Math.max(0,Number(roomData.handCounts?.[1-mySlot]??0));
+ const box=$("opponentHandZone").querySelector(".cards");
+ box.replaceChildren(...Array.from({length:Math.min(count,60)},()=>{const img=document.createElement("img");img.className="opponent-hand-back";img.src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg";img.alt="裏向きの手札";img.draggable=false;return img;}));
 }
 function chooseAttachTarget(handIndex){
  const insects=(roomData["p"+mySlot+"field"]||[]).map((card,index)=>({card,index})).filter(x=>x.card.kind==="虫");
