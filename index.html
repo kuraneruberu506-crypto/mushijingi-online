@@ -461,8 +461,33 @@ function chooseMove(from,index){
  Object.assign(picker.style,{position:"fixed",inset:"0",zIndex:"9999",background:"rgba(0,0,0,.72)",display:"flex",alignItems:"center",justifyContent:"center",padding:"18px"});
  const panel=document.createElement("div");Object.assign(panel.style,{background:"#173b2b",border:"1px solid #6b9b7b",borderRadius:"14px",padding:"18px",width:"min(100%,360px)",maxHeight:"80vh",overflowY:"auto",color:"#fff"});
  const heading=document.createElement("h3");heading.textContent="移動先を選択";panel.append(heading);
- opts.forEach(dest=>{const b=document.createElement("button");b.type="button";b.textContent=labels[dest];Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",whiteSpace:"normal",textAlign:"left"});b.onclick=()=>{picker.remove();moveCard(from,index,dest==="revealToHand"?"hand":dest);};panel.append(b);});
+ opts.forEach(dest=>{const b=document.createElement("button");b.type="button";b.textContent=labels[dest];Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",whiteSpace:"normal",textAlign:"left"});b.onclick=()=>{picker.remove();if(dest==="revealToHand")collectTerritoryCard(index);else moveCard(from,index,dest);};panel.append(b);});
  const cancel=document.createElement("button");cancel.type="button";cancel.textContent="キャンセル";cancel.style.width="100%";cancel.onclick=()=>picker.remove();panel.append(cancel);picker.append(panel);picker.addEventListener("click",e=>{if(e.target===picker)picker.remove();});document.body.append(picker);
+}
+async function collectTerritoryCard(index){
+ const zone="p"+mySlot+"territory";
+ try{
+  const [boardSnap,handSnap,revealSnap]=await Promise.all([
+   get(roomRef("board")),get(roomRef("privateHands/"+uid)),get(roomRef("privateTerritoryReveals/"+uid))
+  ]);
+  const latestBoard=boardSnap.val()||blankBoard();
+  const territory=Array.isArray(latestBoard[zone])?latestBoard[zone]:[];
+  if(index<0||index>=territory.length){log("ナワバリのカードが見つかりません。画面を更新してください。");return;}
+  const card=territory.splice(index,1)[0];
+  const latestHand=Array.isArray(handSnap.val())?handSnap.val():[];
+  latestHand.push(card);
+  const reveals=Array.isArray(revealSnap.val())?revealSnap.val():[];
+  const nextReveals=reveals.filter(i=>i!==index).map(i=>i>index?i-1:i);
+  latestBoard.logs=latestBoard.logs||[];
+  latestBoard.logs.push("プレイヤー"+(mySlot+1)+"：ナワバリのカードを表向きにして手札に加えました");
+  await update(roomRef(),{
+   board:latestBoard,
+   ["privateHands/"+uid]:latestHand,
+   ["privateTerritoryReveals/"+uid]:nextReveals
+  });
+  roomData=latestBoard;hand=latestHand;privateReveals=nextReveals;
+  render();renderHand();
+ }catch(e){log("ナワバリ回収に失敗しました："+(e?.message||String(e)));}
 }
 async function moveCard(from,index,to){
  if(from===to)return;
