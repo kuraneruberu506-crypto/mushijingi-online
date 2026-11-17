@@ -27,7 +27,7 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 .zone.over{background:#314d37;outline:2px solid var(--green)}
 .playerarea{display:grid;gap:9px}.area-title{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .controls{display:flex;gap:7px;flex-wrap:wrap}.controls button{font-size:13px;padding:8px}
-.handzone{min-height:140px}.handzone .card{width:82px;min-height:112px}
+.hands-header{display:grid;grid-template-columns:1fr 1fr;gap:10px}.hand-player{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#111b15;border:1px solid var(--line);border-radius:10px;padding:8px;min-width:0}.hand-player-title{display:flex;flex-direction:column;gap:4px}.hand-back-preview{width:42px;height:60px;object-fit:fill;border-radius:4px;border:1px solid #9b8955;flex:0 0 auto}.hand-player .small{font-size:11px}.handzone{min-height:140px}.handzone .card{width:82px;min-height:112px}
 #log{max-height:150px;overflow:auto;font-size:12px;color:var(--muted);white-space:pre-wrap}
 #chatlog{height:100px;overflow:auto;background:#111b15;border-radius:8px;padding:8px;font-size:12px}
 @media(max-width:700px){
@@ -99,7 +99,17 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 </div>
 
 <div class="panel playerarea">
-<div class="area-title"><b>自分の手札</b><span class="small muted">相手には表示されません（自分の端末のみ）</span></div>
+<div class="hands-header">
+<div class="hand-player">
+<div class="hand-player-title"><b>相手の手札</b><span class="small muted">山札：<strong id="opponentDeckNearHand">0</strong>枚</span></div>
+<img class="hand-back-preview" src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg" alt="相手の手札の裏面">
+</div>
+<div class="hand-player">
+<div class="hand-player-title"><b>自分の手札</b><span class="small muted">山札：<strong id="myDeckNearHand">0</strong>枚</span></div>
+<img class="hand-back-preview" src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg" alt="自分の手札の裏面">
+</div>
+</div>
+<div class="small muted">相手の手札は裏向きで表示されます。自分の手札は自分の端末でのみ確認できます。</div>
 <div class="zone handzone" id="myHand" data-zone="hand"><div class="cards"></div></div>
 <div class="controls">
 <button id="draw">山札から1枚引く</button>
@@ -191,6 +201,9 @@ function enterGame(){
 async function saveBoard(){await set(roomRef("board"),roomData)}
 function render(){
  for(let i=0;i<2;i++){ $("p"+i+"deck").textContent=roomData.deck?.[i]??0;$("p"+i+"prize").textContent=(roomData["p"+i+"territory"]||[]).length;$("p"+i).classList.toggle("active",roomData.turn===i);}
+ const ownDeck=roomData.deck?.[mySlot]??0, opponentDeck=roomData.deck?.[1-mySlot]??0;
+ if($("myDeckNearHand"))$("myDeckNearHand").textContent=ownDeck;
+ if($("opponentDeckNearHand"))$("opponentDeckNearHand").textContent=opponentDeck;
  $("turnLabel").textContent="現在のターン："+($("p"+(roomData.turn||0)+"name").textContent);
  document.querySelectorAll(".zone[data-zone]").forEach(z=>{if(z.dataset.zone==="hand")return;const arr=roomData[z.dataset.zone]||[];z.querySelector(".cards").replaceChildren(...arr.map((c,idx)=>makeCard(c,z.dataset.zone,idx)));});
 
