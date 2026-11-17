@@ -22,7 +22,7 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 .player strong{display:block}.zones{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}
 .zone{min-height:115px;border:1px dashed #607564;border-radius:11px;padding:8px;background:#111b15;position:relative}
 .zone h3{font-size:12px;color:var(--gold);margin:0 0 7px}.zone .cards{display:flex;gap:6px;flex-wrap:wrap;align-content:flex-start}
-.card{width:75px;min-height:95px;border-radius:8px;border:1px solid #b69b5e;background:linear-gradient(145deg,#f2e5bf,#c7b27c);color:#29251a;padding:6px;font-size:11px;display:flex;flex-direction:column;justify-content:space-between;cursor:grab;box-shadow:0 3px 7px #0005;overflow-wrap:anywhere}
+.card{width:75px;min-height:95px;border-radius:8px;border:1px solid #b69b5e;background:linear-gradient(145deg,#f2e5bf,#c7b27c);color:#29251a;padding:6px;font-size:11px;display:flex;flex-direction:column;justify-content:space-between;cursor:grab;box-shadow:0 3px 7px #0005;overflow-wrap:anywhere}.card.has-image{padding:0;position:relative;overflow:hidden;background:#111}.card.has-image img{display:block;width:100%;height:100%;min-height:95px;object-fit:fill}.card.has-image button{position:absolute;bottom:3px;right:3px;opacity:.95}
 .card b{font-size:12px}.card .kind{font-size:9px;color:#594d31}.card button{font-size:10px;padding:3px;background:#65542e;color:white}
 .zone.over{background:#314d37;outline:2px solid var(--green)}
 .playerarea{display:grid;gap:9px}.area-title{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -179,13 +179,20 @@ function render(){
  document.querySelectorAll(".zone[data-zone]").forEach(z=>{if(z.dataset.zone==="hand")return;const arr=roomData[z.dataset.zone]||[];z.querySelector(".cards").replaceChildren(...arr.map((c,idx)=>makeCard(c,z.dataset.zone,idx)));});
  $("log").textContent=(roomData.logs||[]).slice(-30).reverse().join("\n");
 }
+const cardImages={
+ "ニセハナマオウカマキリ":"https://mushijingi.com/images/card/thumbnail.php?height=300&src=1.jpg&width=225",
+ "リオック":"https://mushijingi.com/images/card/thumbnail.php?height=300&src=2.jpg&width=225"
+};
 function makeCard(c,zone,index){
  const el=document.createElement("div");el.className="card";el.draggable=true;el.dataset.zone=zone;el.dataset.index=index;
  const title=document.createElement("b");title.textContent=c.name;
  const kind=document.createElement("span");kind.className="kind";kind.textContent=c.kind||"カード";
  const actions=document.createElement("div");
  const move=document.createElement("button");move.textContent="移動";move.onclick=()=>chooseMove(zone,index);
- actions.append(move);el.append(title,kind,actions);
+ actions.append(move);
+ const imageUrl=cardImages[c.name];
+ if(imageUrl){const img=document.createElement("img");img.src=imageUrl;img.alt=c.name+"のカード画像";img.onerror=()=>{el.classList.remove("has-image");img.remove();el.prepend(title,kind);};el.classList.add("has-image");el.append(img,actions);}
+ else{el.append(title,kind,actions);}
  el.addEventListener("dragstart",e=>e.dataTransfer.setData("text/plain",JSON.stringify({zone,index})));
  return el;
 }
