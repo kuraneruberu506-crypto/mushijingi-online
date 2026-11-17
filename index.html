@@ -31,7 +31,7 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 #log{max-height:150px;overflow:auto;font-size:12px;color:var(--muted);white-space:pre-wrap}
 #chatlog{height:100px;overflow:auto;background:#111b15;border-radius:8px;padding:8px;font-size:12px}
 @media(max-width:700px){main{padding:9px}.zones{grid-template-columns:repeat(2,1fr)}.boardtop{grid-template-columns:1fr 1fr}.boardtop .center{grid-column:1/-1;grid-row:1}.card{width:68px;min-height:88px}.lobby-grid{grid-template-columns:1fr}header{padding:12px}}
-.card-search-tools{display:flex;gap:8px;flex-wrap:wrap}.card-search-tools input{flex:1;min-width:140px}.card-search-note{font-size:12px;color:var(--muted);line-height:1.6}.decktools{display:grid;gap:10px}.decklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:240px;overflow:auto}.deckitem{display:flex;justify-content:space-between;align-items:center;gap:6px;background:#111b15;border:1px solid var(--line);border-radius:8px;padding:7px;font-size:12px}.deckitem button{padding:4px 7px;font-size:11px}.deckstatus{font-weight:700;color:var(--gold)}.suggestions{display:grid;gap:4px;max-height:180px;overflow:auto}.suggestions button{text-align:left;background:#17231a;font-size:13px;padding:7px}.rarity-tag{font-size:10px;color:#ffe29a;margin-top:2px}
+.card-search-tools{display:flex;gap:8px;flex-wrap:wrap}.card-search-tools input{flex:1;min-width:140px}.card-search-note{font-size:12px;color:var(--muted);line-height:1.6}.decktools{display:grid;gap:10px}.decklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:240px;overflow:auto}.deckitem{display:flex;justify-content:space-between;align-items:center;gap:6px;background:#111b15;border:1px solid var(--line);border-radius:8px;padding:7px;font-size:12px}.deckitem button{padding:4px 7px;font-size:11px}.deckstatus{font-weight:700;color:var(--gold)}.suggestions{display:grid;gap:4px;max-height:180px;overflow:auto}.suggestions button{text-align:left;background:#17231a;font-size:13px;padding:7px}.rarity-tag{font-size:10px;color:#ffe29a;margin-top:2px}.card .rarity-badge{position:absolute;top:3px;left:3px;background:#1b211de8;color:#ffe29a;border:1px solid #c9a84f;border-radius:5px;padding:2px 4px;font-size:9px;font-weight:800;z-index:2}
 </style>
 </head>
 <body>
@@ -413,12 +413,13 @@ function makeCard(c,zone,index){
  const title=document.createElement("b");title.textContent=c.name;
  const kind=document.createElement("span");kind.className="kind";kind.textContent=c.kind||"カード";
  const actions=document.createElement("div");
+ const rarity=document.createElement("span");rarity.className="rarity-badge";rarity.textContent=c.rarity||"N";
  const move=document.createElement("button");move.textContent="移動";move.onclick=()=>chooseMove(zone,index);
  actions.append(move);
  const variantKey=String(c.name||"")+"|"+String(c.rarity||"");
  const imageUrl=cardVariantImages[variantKey]||cardImages[c.name]||normalizedCardImages[normalizeCardImageName(c.name)];
- if(imageUrl){const img=document.createElement("img");img.src=imageUrl;img.alt=c.name+"のカード画像";img.onerror=()=>{el.classList.remove("has-image");img.remove();el.prepend(title,kind);};el.classList.add("has-image");el.append(img,actions);}
- else{el.append(title,kind,actions);}
+ if(imageUrl){const img=document.createElement("img");img.src=imageUrl;img.alt=c.name+"のカード画像";img.onerror=()=>{el.classList.remove("has-image");img.remove();el.prepend(title,kind);};el.classList.add("has-image");el.append(img,rarity,actions);}
+ else{el.append(title,rarity,kind,actions);}
  el.addEventListener("dragstart",e=>e.dataTransfer.setData("text/plain",JSON.stringify({zone,index})));
  return el;
 }
