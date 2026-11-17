@@ -417,7 +417,7 @@ function setupCardSuggestions(inputId,listId){
   const q=normalizeCardImageName(input.value);
   list.replaceChildren();if(!q)return;
   const matches=Object.keys(cardImages).filter(n=>normalizeCardImageName(n).includes(q)).slice(0,10);
-  matches.forEach(name=>{const button=document.createElement("button");button.type="button";const url=cardImages[name]||normalizedCardImages[normalizeCardImageName(name)];if(url){const img=document.createElement("img");img.src=url;img.alt=name+"のカード画像";img.loading="lazy";button.append(img);}const label=document.createElement("span");label.className="suggestion-name";label.textContent=name;button.append(label);button.onclick=()=>{if(deckCards.length>=20)return alert("デッキは20枚までです");deckCards.push({name,rarity: $("deckCardRarity").value,kind:$("deckCardKind").value});deckReady=deckCards.length===20;renderDeck();};list.append(button);});
+  matches.forEach(name=>{const button=document.createElement("button");button.type="button";const url=cardImages[name]||normalizedCardImages[normalizeCardImageName(name)];if(url){const img=document.createElement("img");img.src=url;img.alt=name+"のカード画像";img.loading="lazy";button.append(img);}const label=document.createElement("span");label.className="suggestion-name";label.textContent=name;button.append(label);button.onclick=()=>{if(deckCards.length>=20)return alert("デッキは20枚までです");deckCards.push({name,rarity: $("deckCardRarity").value,kind:$("deckCardKind").value});deckReady=deckCards.length===20;saveLocalDeck();renderDeck();};list.append(button);});
  });
 }
 setupCardSuggestions("deckCardName","deckCardSuggestions");
@@ -458,9 +458,9 @@ async function moveCard(from,index,to){
  await saveBoard();
 }
 
-function deckStorageKey(){return "mushijingi-deck-"+(uid||"guest");}
-function loadLocalDeck(){try{const a=JSON.parse(localStorage.getItem(deckStorageKey())||"[]");deckCards=Array.isArray(a)?a:[];deckReady=deckCards.length===20;}catch{deckCards=[];deckReady=false;}renderDeck();}
-function saveLocalDeck(){try{localStorage.setItem(deckStorageKey(),JSON.stringify(deckCards));}catch(e){log("端末への保存に失敗しました");}}
+function deckStorageKey(){return "mushijingi-deck-v2";}
+function loadLocalDeck(){try{let best=[];for(let i=0;i<localStorage.length;i++){const key=localStorage.key(i);if(!key||!key.startsWith("mushijingi-deck"))continue;try{const a=JSON.parse(localStorage.getItem(key)||"null");if(Array.isArray(a)&&a.length>best.length)best=a;}catch{}}deckCards=best;deckReady=deckCards.length===20;if(deckCards.length)saveLocalDeck();}catch{deckCards=[];deckReady=false;}renderDeck();}
+function saveLocalDeck(){try{const data=JSON.stringify(deckCards);localStorage.setItem(deckStorageKey(),data);if(uid)localStorage.setItem("mushijingi-deck-"+uid,data);}catch(e){log("端末への保存に失敗しました");}}
 function renderDeck(){const list=$("deckList");if(!list)return;const shown=deckCards.map((c,i)=>({...c,_i:i}));list.replaceChildren(...shown.map(c=>{const item=document.createElement("div");item.className="deckitem deck-card";const no=document.createElement("span");no.className="deck-no";no.textContent="No."+(c._i+1);const variantKey=String(c.name||"")+"|"+String(c.rarity||"");const imageUrl=cardVariantImages[variantKey]||cardImages[c.name]||normalizedCardImages[normalizeCardImageName(c.name)];if(imageUrl){const img=document.createElement("img");img.className="deck-thumb";img.src=imageUrl;img.alt=c.name+"のカード画像";img.onerror=()=>{img.remove();};item.append(no,img);}else{const missing=document.createElement("div");missing.className="deck-thumb";missing.style.cssText="display:grid;place-items:center;color:#b8c5b9;font-size:11px;text-align:center";missing.textContent="画像なし";item.append(no,missing);}const label=document.createElement("div");label.className="deck-name";label.textContent=c.name;const meta=document.createElement("div");meta.className="deck-meta";meta.textContent=(c.rarity||"N")+"・"+(c.kind||"カード");const del=document.createElement("button");del.textContent="削除";del.onclick=()=>{deckCards.splice(c._i,1);deckReady=false;renderDeck();saveLocalDeck();};item.append(label,meta,del);return item;}));$("deckCount").textContent=deckCards.length+" / 20枚";}
 
 $("deckSave").onclick=()=>{if(deckCards.length!==20)return alert("デッキは20枚にしてください（現在"+deckCards.length+"枚）");saveLocalDeck();deckReady=true;alert("20枚デッキをこの端末に保存しました");};
