@@ -40,7 +40,7 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 <section id="lobby" class="panel">
 <h2 style="margin-top:0">対戦ルーム</h2>
 <p class="muted small">Firebaseを設定すると、スマホ・PC間で盤面をリアルタイム共有できます。</p>
-<label class="small">プレイヤー名</label><input id="name" placeholder="名前" maxlength="16" style="width:100%;margin:5px 0 12px">
+
 <div class="lobby-grid">
 <div><b>ルームを作成</b><p class="small muted">新しいルームを作って友人を招待します。</p><button class="primary" id="create">ルーム作成</button></div>
 <div><b>ルームに参加</b><p class="small muted">友人から教えてもらったIDを入力。</p><input id="roomInput" placeholder="ルームID" maxlength="8" style="width:100%;margin:0 0 7px"><button id="join">参加する</button></div>
@@ -145,7 +145,7 @@ function cleanup(){unsub.forEach(f=>f());unsub=[]}
 function roomRef(path=""){return ref(db,`rooms/${roomId}${path?"/"+path:""}`)}
 async function createRoom(){
  if(!db||!uid)return msg("先にREADMEのFirebase設定を完了してください。");
- const name=$("name").value.trim()||"プレイヤー1";
+ const name="プレイヤー1";
  roomId=Math.random().toString(36).slice(2,8).toUpperCase();mySlot=0;
  await set(roomRef("meta"),{createdAt:Date.now(),host:uid});
  await set(roomRef("players/"+uid),{name,slot:0});
@@ -163,7 +163,7 @@ async function joinRoom(){
   const used=Object.values(players).map(p=>p.slot);
   if(used.includes(1))return msg("このルームは満員です。");
   mySlot=used.includes(0)?1:0;
-  await set(roomRef("players/"+uid),{name:$("name").value.trim()||"プレイヤー"+(mySlot+1),slot:mySlot});
+  await set(roomRef("players/"+uid),{name:"プレイヤー"+(mySlot+1),slot:mySlot});
   await set(roomRef("privateHands/"+uid),[]);
  }
  enterGame();
@@ -442,7 +442,7 @@ async function moveCard(from,index,to){
   roomData[from]=roomData[from]||[];const c=roomData[from].splice(index,1)[0];if(!c)return;
   if(to==="hand"){hand.push(c);await set(roomRef("privateHands/"+uid),hand);}else{roomData[to]=roomData[to]||[];roomData[to].push(c);}
  }
- roomData.logs=roomData.logs||[];roomData.logs.push(`${$("name").value||"プレイヤー"}：カードを移動`);
+ roomData.logs=roomData.logs||[];roomData.logs.push(`プレイヤー${mySlot+1}：カードを移動`);
  await saveBoard();
 }
 
@@ -469,10 +469,10 @@ $("copyRoom").onclick=()=>navigator.clipboard?.writeText(roomId);
 $("draw").onclick=async()=>{const deck=roomData.deck||[20,20];if(!deckReady||deckCards.length===0)return log("先に20枚デッキを読み込んでください");if(deck[mySlot]<=0||deckCards.length===0)return log("山札がありません");const c=deckCards.shift();hand.push(c);await set(roomRef("privateHands/"+uid),hand);deck[mySlot]=deckCards.length;roomData.deck=deck;saveLocalDeck();await saveBoard();log("山札から「"+c.name+"」を引きました");};
 $("deckPlus").onclick=async()=>{roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]++;await saveBoard()};
 $("deckMinus").onclick=async()=>{roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=Math.max(0,roomData.deck[mySlot]-1);await saveBoard()};
-$("turn").onclick=async()=>{roomData.turn=1-(roomData.turn||0);roomData.logs=roomData.logs||[];roomData.logs.push(($("name").value||"プレイヤー")+"がターン交代");await saveBoard()};
+$("turn").onclick=async()=>{roomData.turn=1-(roomData.turn||0);roomData.logs=roomData.logs||[];roomData.logs.push(("プレイヤー"+(mySlot+1))+"がターン交代");await saveBoard()};
 $("coin").onclick=async()=>{roomData.turn=Math.random()<.5?0:1;roomData.logs=roomData.logs||[];roomData.logs.push("先攻："+$("p"+roomData.turn+"name").textContent);await saveBoard()};
 $("clearLog").onclick=async()=>{roomData.logs=[];await saveBoard()};
-$("sendChat").onclick=async()=>{const t=$("chatText").value.trim();if(!t)return;await push(roomRef("chat"),{name:$("name").value||"プレイヤー",text:t,at:Date.now()});$("chatText").value=""};
+$("sendChat").onclick=async()=>{const t=$("chatText").value.trim();if(!t)return;await push(roomRef("chat"),{name:"プレイヤー"+(mySlot+1),text:t,at:Date.now()});$("chatText").value=""};
 $("chatText").addEventListener("keydown",e=>{if(e.key==="Enter")$("sendChat").click()});
 loadAllCardImages();
 loadLocalDeck();
