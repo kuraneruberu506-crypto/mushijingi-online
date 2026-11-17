@@ -86,9 +86,9 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 <div class="panel">
 <div class="area-title"><div><b>ルーム：<span id="roomCode"></span></b> <span class="small muted">相手にこのIDを共有</span></div><button id="copyRoom">IDをコピー</button></div>
 <div class="boardtop" style="margin-top:12px">
-<div class="player" id="p0"><strong id="p0name">プレイヤー1</strong><span class="small">山札：<span id="p0deck">0</span>枚 / 縄張り：<span id="p0prize">0</span>枚</span></div>
+<div class="player" id="p0"><strong id="p0name">プレイヤー1</strong><span class="small">山札：<span id="p0deck">0</span>枚</span></div>
 <div class="center"><div class="controls" style="justify-content:center"><button id="turn">ターン交代</button><button id="coin">先攻・後攻を決める</button></div><div class="small muted" id="turnLabel" style="text-align:center;margin-top:6px">進行待ち</div></div>
-<div class="player" id="p1"><strong id="p1name">プレイヤー2</strong><span class="small">山札：<span id="p1deck">0</span>枚 / 縄張り：<span id="p1prize">0</span>枚</span></div>
+<div class="player" id="p1"><strong id="p1name">プレイヤー2</strong><span class="small">山札：<span id="p1deck">0</span>枚</span></div>
 </div>
 </div>
 
@@ -114,17 +114,7 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 </div>
 
 <div class="panel playerarea">
-<div class="hands-header">
-<div class="hand-player">
-<div class="hand-player-title"><b>相手の手札</b><span class="small muted">山札：<strong id="opponentDeckNearHand">0</strong>枚</span></div>
-<img class="hand-back-preview" src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg" alt="相手の手札の裏面">
-</div>
-<div class="hand-player">
-<div class="hand-player-title"><b>自分の手札</b></div>
-<img class="hand-back-preview" src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg" alt="自分の手札の裏面">
-</div>
-</div>
-<div class="small muted">相手の手札は裏向きで表示されます。自分の手札は自分の端末でのみ確認できます。</div>
+
 <div class="zone handzone" id="myHand" data-zone="hand"><div class="cards"></div></div>
 <div class="controls">
 <button id="draw">山札から1枚引く</button>
