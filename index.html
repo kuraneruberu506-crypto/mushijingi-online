@@ -30,7 +30,18 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 .handzone{min-height:140px}.handzone .card{width:82px;min-height:112px}
 #log{max-height:150px;overflow:auto;font-size:12px;color:var(--muted);white-space:pre-wrap}
 #chatlog{height:100px;overflow:auto;background:#111b15;border-radius:8px;padding:8px;font-size:12px}
-@media(max-width:700px){main{padding:9px}.zones{grid-template-columns:repeat(2,1fr)}.boardtop{grid-template-columns:1fr 1fr}.boardtop .center{grid-column:1/-1;grid-row:1}.card{width:68px;min-height:88px}.lobby-grid{grid-template-columns:1fr}header{padding:12px}}
+@media(max-width:700px){
+ main{padding:6px;gap:8px}header{padding:10px 12px;gap:6px}h1{font-size:17px}.sub{font-size:10px}
+ #game{display:grid;gap:8px}#game>.panel{padding:9px;border-radius:10px}
+ .boardtop{grid-template-columns:1fr 1fr;gap:6px}.boardtop .center{grid-column:1/-1;grid-row:1}.player{padding:7px}.player strong{font-size:13px}.player .small{font-size:10px}
+ .boardtop .controls{gap:5px}.boardtop .controls button{font-size:11px;padding:8px 6px;flex:1}
+ .zones{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}.zone{min-width:0;min-height:132px;padding:6px;border-radius:8px}.zone h3{font-size:11px;margin-bottom:6px}.zone .cards{display:flex;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;gap:5px;padding-bottom:4px;min-height:100px;align-items:flex-start;scrollbar-width:thin}
+ .card{flex:0 0 66px;width:66px;min-height:94px;padding:4px;font-size:10px}.card.has-image img,.card.territory-back img{height:94px;min-height:94px}.card.has-image button,.card.territory-back button{font-size:9px;padding:3px}.card b{font-size:10px}
+ .handzone{min-height:132px}.handzone .cards{overflow-x:auto;flex-wrap:nowrap}.handzone .card{flex:0 0 76px;width:76px;min-height:104px}
+ .area-title{align-items:flex-start;flex-wrap:wrap;gap:5px}.area-title .small{font-size:10px}.controls{gap:5px}.controls button{font-size:11px;padding:8px 6px}
+ #gameDeckPanel .controls button{flex:1 1 42%}#log{max-height:110px;font-size:11px}#chatlog{height:85px;font-size:11px}
+ .lobby-grid{grid-template-columns:1fr}#lobby{margin:10px auto;padding:10px}
+}
 .card-search-tools{display:flex;gap:8px;flex-wrap:wrap}.card-search-tools input{flex:1;min-width:140px}.card-search-note{font-size:12px;color:var(--muted);line-height:1.6}.decktools{display:grid;gap:10px}.decklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:240px;overflow:auto}.deckitem{display:flex;justify-content:space-between;align-items:center;gap:6px;background:#111b15;border:1px solid var(--line);border-radius:8px;padding:7px;font-size:12px}.deckitem button{padding:4px 7px;font-size:11px}.deckitem.deck-card{position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;padding:6px;min-width:0}.deck-card .deck-thumb{width:100%;aspect-ratio:3/4;object-fit:contain;background:#080d09;border-radius:5px}.deck-card .deck-no{font-size:10px;color:var(--muted)}.deck-card .deck-name{font-size:11px;font-weight:700;overflow-wrap:anywhere;min-height:30px}.deck-card .deck-meta{font-size:10px;color:#ffe29a}.deck-card button{width:100%;margin-top:4px}.deckstatus{font-weight:700;color:var(--gold)}.suggestions{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:7px;max-height:300px;overflow:auto}.suggestions button{text-align:left;background:#17231a;font-size:12px;padding:5px;display:flex;flex-direction:column;gap:4px;min-width:0}.suggestions img{width:100%;aspect-ratio:3/4;object-fit:contain;background:#080d09;border-radius:5px}.suggestions .suggestion-name{font-weight:700;overflow-wrap:anywhere}.rarity-tag{font-size:10px;color:#ffe29a;margin-top:2px}.card .rarity-badge{position:absolute;top:3px;left:3px;background:#1b211de8;color:#ffe29a;border:1px solid #c9a84f;border-radius:5px;padding:2px 4px;font-size:9px;font-weight:800;z-index:2}
 </style>
 </head>
