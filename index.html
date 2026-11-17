@@ -468,7 +468,7 @@ $("deckEditLoad").onclick=()=>{try{const a=JSON.parse(localStorage.getItem(deckS
 $("deckLoad").onclick=()=>{try{const a=JSON.parse(localStorage.getItem(deckStorageKey())||"null");if(!Array.isArray(a)||a.length!==20)return alert("保存された20枚デッキがありません。ロビー画面で20枚デッキを保存してください");deckCards=a;deckReady=true;roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=20;saveBoard();renderDeck();$("gameDeckStatus").textContent="20枚デッキを読み込みました。山札からカードを引けます。";log("保存デッキを対戦用の山札に読み込みました");}catch{alert("保存デッキを読み込めませんでした");}};
 $("deckClear").onclick=()=>{if(!confirm("デッキを空にしますか？"))return;deckCards=[];deckReady=false;saveLocalDeck();renderDeck();};
 
-$("territorySetup").onclick=async()=>{if(!deckReady||deckCards.length===0)return alert("先にデッキを読み込んでください");const raw=prompt("縄張りに置く枚数を入力してください","4");if(raw===null)return;const n=Number(raw);if(!Number.isInteger(n)||n<1||n>deckCards.length)return alert("山札にある枚数以内の整数を入力してください");const zone="p"+mySlot+"territory";roomData[zone]=roomData[zone]||[];for(let i=0;i<n;i++)roomData[zone].push(deckCards.shift());roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=deckCards.length;saveLocalDeck();await saveBoard();log("縄張りを"+n+"枚設定しました");};
+$("territorySetup").onclick=async()=>{if(!deckReady||deckCards.length===0)return alert("先にデッキを読み込んでください");const raw=prompt("縄張りに置く枚数を入力してください","4");if(raw===null)return;const n=Number(raw);if(!Number.isInteger(n)||n<1||n>deckCards.length)return alert("山札にある枚数以内の整数を入力してください");const zone="p"+mySlot+"territory";roomData[zone]=roomData[zone]||[];for(let i=0;i<n;i++)roomData[zone].push(deckCards.shift());roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=deckCards.length;await saveBoard();log("縄張りを"+n+"枚設定しました");};
 $("effectMemo").onclick=()=>{const note=prompt("処理した効果や内容を入力してください");if(!note)return;roomData.logs=roomData.logs||[];roomData.logs.push("効果メモ："+note);saveBoard();};
 document.querySelectorAll(".zone").forEach(z=>{
  z.addEventListener("dragover",e=>{e.preventDefault();z.classList.add("over")});
@@ -477,7 +477,7 @@ document.querySelectorAll(".zone").forEach(z=>{
 });
 $("create").onclick=createRoom;$("join").onclick=joinRoom;
 $("copyRoom").onclick=()=>navigator.clipboard?.writeText(roomId);
-$("draw").onclick=async()=>{const deck=roomData.deck||[20,20];if(!deckReady||deckCards.length===0)return log("先に20枚デッキを読み込んでください");if(deck[mySlot]<=0||deckCards.length===0)return log("山札がありません");const c=deckCards.shift();hand.push(c);await set(roomRef("privateHands/"+uid),hand);deck[mySlot]=deckCards.length;roomData.deck=deck;saveLocalDeck();await saveBoard();log("山札から「"+c.name+"」を引きました");};
+$("draw").onclick=async()=>{const deck=roomData.deck||[20,20];if(!deckReady||deckCards.length===0)return log("先に20枚デッキを読み込んでください");if(deck[mySlot]<=0||deckCards.length===0)return log("山札がありません");const c=deckCards.shift();hand.push(c);await set(roomRef("privateHands/"+uid),hand);deck[mySlot]=deckCards.length;roomData.deck=deck;await saveBoard();log("山札から「"+c.name+"」を引きました");};
 $("deckPlus").onclick=async()=>{roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]++;await saveBoard()};
 $("deckMinus").onclick=async()=>{roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=Math.max(0,roomData.deck[mySlot]-1);await saveBoard()};
 $("turn").onclick=async()=>{roomData.turn=1-(roomData.turn||0);roomData.logs=roomData.logs||[];roomData.logs.push(("プレイヤー"+(mySlot+1))+"がターン交代");await saveBoard()};
