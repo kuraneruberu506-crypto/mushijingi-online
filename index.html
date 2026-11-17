@@ -31,6 +31,7 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 #log{max-height:150px;overflow:auto;font-size:12px;color:var(--muted);white-space:pre-wrap}
 #chatlog{height:100px;overflow:auto;background:#111b15;border-radius:8px;padding:8px;font-size:12px}
 @media(max-width:700px){main{padding:9px}.zones{grid-template-columns:repeat(2,1fr)}.boardtop{grid-template-columns:1fr 1fr}.boardtop .center{grid-column:1/-1;grid-row:1}.card{width:68px;min-height:88px}.lobby-grid{grid-template-columns:1fr}header{padding:12px}}
+.decktools{display:grid;gap:10px}.decklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:240px;overflow:auto}.deckitem{display:flex;justify-content:space-between;align-items:center;gap:6px;background:#111b15;border:1px solid var(--line);border-radius:8px;padding:7px;font-size:12px}.deckitem button{padding:4px 7px;font-size:11px}.deckstatus{font-weight:700;color:var(--gold)}
 </style>
 </head>
 <body>
@@ -58,6 +59,14 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 </div>
 
 <div class="panel playerarea">
+<div class="panel playerarea" id="deckPanel">
+<div class="area-title"><b>20枚デッキ構築・管理</b><span class="small muted">デッキ内容は自分の端末だけに保存</span></div>
+<div class="row"><input id="deckCardName" class="grow" placeholder="カード名を入力" maxlength="35"><select id="deckCardKind" style="background:#111b15;color:white;border:1px solid var(--line);border-radius:9px;padding:9px"><option>虫</option><option>術</option><option>強化</option><option>その他</option></select><button id="deckAdd">デッキに追加</button></div>
+<div class="row"><input id="deckSearch" class="grow" placeholder="デッキ内のカードを検索"><span class="deckstatus" id="deckCount">0 / 20枚</span></div>
+<div id="deckList" class="decklist"></div>
+<div class="controls"><button class="primary" id="deckSave">デッキを保存</button><button id="deckLoad">保存デッキを読み込む</button><button id="deckClear" class="danger">デッキを空にする</button><button id="deckShuffle">山札をシャッフル</button><button id="territorySetup">縄張りを設定</button></div>
+<div class="small muted">カード名は手入力式です。20枚になったら保存して、対戦中に「山札から1枚引く」を使えます。保存デッキはこの端末・ブラウザ内に保存されます。</div>
+</div>
 <div class="area-title"><b>盤面</b><span class="small muted">カードをドラッグ、またはカードの移動先ボタンで操作</span></div>
 <div class="zones">
 <div class="zone" data-zone="p0field"><h3>プレイヤー1：場</h3><div class="cards"></div></div>
@@ -110,7 +119,7 @@ const firebaseConfig = {
 };
 
 const $ = id => document.getElementById(id);
-let db, auth, uid, roomId, mySlot, roomData={}, hand=[], unsub=[];
+let db, auth, uid, roomId, mySlot, roomData={}, hand=[], unsub=[];\nlet deckCards=[], deckReady=false;
 const blankBoard = () => ({p0field:[],p0territory:[],p0grave:[],p0mana:[],p1field:[],p1territory:[],p1grave:[],p1mana:[],deck:[20,20],turn:0,logs:[]});
 const cfgReady = !firebaseConfig.apiKey.startsWith("YOUR_");
 if(cfgReady){
@@ -194,7 +203,19 @@ async function moveCard(from,index,to){
  roomData.logs=roomData.logs||[];roomData.logs.push(`${$("name").value||"プレイヤー"}：カードを移動`);
  await saveBoard();
 }
-document.querySelectorAll(".zone").forEach(z=>{
+
+function deckStorageKey(){return "mushijingi-deck-"+(uid||"guest");}
+function loadLocalDeck(){try{const a=JSON.parse(localStorage.getItem(deckStorageKey())||"[]");deckCards=Array.isArray(a)?a:[];deckReady=deckCards.length===20;}catch{deckCards=[];deckReady=false;}renderDeck();}
+function saveLocalDeck(){try{localStorage.setItem(deckStorageKey(),JSON.stringify(deckCards));}catch(e){log("端末への保存に失敗しました");}}
+function renderDeck(){const q=($("deckSearch")?.value||"").trim().toLowerCase();const list=$("deckList");if(!list)return;const shown=deckCards.map((c,i)=>({...c,_i:i})).filter(c=>!q||c.name.toLowerCase().includes(q)||String(c.kind||"").toLowerCase().includes(q));list.replaceChildren(...shown.map(c=>{const item=document.createElement("div");item.className="deckitem";const label=document.createElement("span");label.textContent=(c._i+1)+". "+c.name+"（"+(c.kind||"カード")+"）";const del=document.createElement("button");del.textContent="削除";del.onclick=()=>{deckCards.splice(c._i,1);deckReady=false;renderDeck();saveLocalDeck();};item.append(label,del);return item;}));$("deckCount").textContent=deckCards.length+" / 20枚";}
+$("deckAdd").onclick=()=>{const name=$("deckCardName").value.trim();if(!name)return;if(deckCards.length>=20)return alert("デッキは20枚までです");deckCards.push({name,kind:$("deckCardKind").value});$("deckCardName").value="";deckReady=deckCards.length===20;renderDeck();};
+$("deckSearch").oninput=renderDeck;
+$("deckSave").onclick=()=>{if(deckCards.length!==20)return alert("デッキは20枚にしてください（現在"+deckCards.length+"枚）");saveLocalDeck();deckReady=true;alert("20枚デッキをこの端末に保存しました");};
+$("deckLoad").onclick=()=>{try{const a=JSON.parse(localStorage.getItem(deckStorageKey())||"null");if(!Array.isArray(a)||a.length!==20)return alert("保存された20枚デッキがありません");deckCards=a;deckReady=true;roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=20;saveBoard();renderDeck();log("保存デッキを山札に読み込みました");}catch{alert("保存デッキを読み込めませんでした");}};
+$("deckClear").onclick=()=>{if(!confirm("デッキを空にしますか？"))return;deckCards=[];deckReady=false;saveLocalDeck();renderDeck();};
+$("deckShuffle").onclick=()=>{if(!deckReady||deckCards.length!==20)return alert("先に20枚デッキを保存してください");for(let i=deckCards.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deckCards[i],deckCards[j]]=[deckCards[j],deckCards[i]];}saveLocalDeck();log("自分の山札をシャッフルしました");};
+$("territorySetup").onclick=async()=>{if(!deckReady||deckCards.length===0)return alert("先にデッキを読み込んでください");const raw=prompt("縄張りに置く枚数を入力してください","4");if(raw===null)return;const n=Number(raw);if(!Number.isInteger(n)||n<1||n>deckCards.length)return alert("山札にある枚数以内の整数を入力してください");const zone="p"+mySlot+"territory";roomData[zone]=roomData[zone]||[];for(let i=0;i<n;i++)roomData[zone].push(deckCards.shift());roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=deckCards.length;saveLocalDeck();await saveBoard();log("縄張りを"+n+"枚設定しました");};
+\ndocument.querySelectorAll(".zone").forEach(z=>{
  z.addEventListener("dragover",e=>{e.preventDefault();z.classList.add("over")});
  z.addEventListener("dragleave",()=>z.classList.remove("over"));
  z.addEventListener("drop",e=>{e.preventDefault();z.classList.remove("over");try{const d=JSON.parse(e.dataTransfer.getData("text/plain"));moveCard(d.zone,d.index,z.dataset.zone)}catch{}});
@@ -202,7 +223,7 @@ document.querySelectorAll(".zone").forEach(z=>{
 $("create").onclick=createRoom;$("join").onclick=joinRoom;
 $("copyRoom").onclick=()=>navigator.clipboard?.writeText(roomId);
 $("addCard").onclick=async()=>{const name=$("cardName").value.trim();if(!name)return;hand.push({name,kind:$("cardKind").value});$("cardName").value="";await set(roomRef("privateHands/"+uid),hand);};
-$("draw").onclick=async()=>{const deck=roomData.deck||[20,20];if(deck[mySlot]<=0)return log("山札がありません");deck[mySlot]--;roomData.deck=deck;await saveBoard();log("山札から1枚引きました");};
+$("draw").onclick=async()=>{const deck=roomData.deck||[20,20];if(!deckReady||deckCards.length===0)return log("先に20枚デッキを読み込んでください");if(deck[mySlot]<=0||deckCards.length===0)return log("山札がありません");const c=deckCards.shift();hand.push(c);await set(roomRef("privateHands/"+uid),hand);deck[mySlot]=deckCards.length;roomData.deck=deck;saveLocalDeck();await saveBoard();log("山札から「"+c.name+"」を引きました");};
 $("deckPlus").onclick=async()=>{roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]++;await saveBoard()};
 $("deckMinus").onclick=async()=>{roomData.deck=roomData.deck||[20,20];roomData.deck[mySlot]=Math.max(0,roomData.deck[mySlot]-1);await saveBoard()};
 $("turn").onclick=async()=>{roomData.turn=1-(roomData.turn||0);roomData.logs=roomData.logs||[];roomData.logs.push(($("name").value||"プレイヤー")+"がターン交代");await saveBoard()};
