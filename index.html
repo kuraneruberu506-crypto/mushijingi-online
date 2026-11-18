@@ -536,7 +536,7 @@ function chooseAttachTarget(handIndex){
 function chooseMove(from,index){
  if(from==="p"+(1-mySlot)+"territory"){alert("対戦相手のナワバリは対戦相手のみ操作できます。");return;}
  const opts=mySlot===0?["p0field","p0territory","p0grave","p0mana","hand"]:["p1field","p1territory","p1grave","p1mana","hand"];
- if(from==="hand")opts.push("deckBottom");
+ if(from==="hand"||(!String(from).endsWith("territory")&&from!=="deckBottom"))opts.push("deckBottom");
  if(from==="p"+mySlot+"territory")opts.splice(opts.indexOf("hand"),1,"revealAndHand");
  const currentCard=from==="hand"?hand[index]:(roomData[from]||[])[index];
  if(currentCard&&!String(from).endsWith("territory")){opts.push(currentCard.faceDown?"turnFaceUp":"turnFaceDown");opts.push("territoryFaceUp");}
@@ -609,10 +609,22 @@ async function moveCard(from,index,to,faceUpInTerritory=false){
  if(from==="p"+(1-mySlot)+"territory"||to==="p"+(1-mySlot)+"territory"){alert("対戦相手のナワバリは対戦相手のみ操作できます。");return;}
  if(from===to)return;
  try{
-  if(from==="hand"&&to==="deckBottom"){
-   const moved=hand.splice(index,1)[0];if(!moved)return;
-   deckCards.push(moved);roomData.deck=Array.isArray(roomData.deck)?[...roomData.deck]:[20,20];roomData.deck[mySlot]=deckCards.length;
-   render();renderHand();await set(roomRef("privateHands/"+uid),hand);await update(roomRef("board"),{deck:roomData.deck});return;
+  if(to==="deckBottom"){
+   let moved;
+   if(from==="hand"){
+    moved=hand.splice(index,1)[0];if(!moved)return;
+    await set(roomRef("privateHands/"+uid),hand);
+   }else{
+    const result=await runTransaction(roomRef("board/"+from),current=>{
+     const cards=asCardArray(current);const cardIndex=Number(index);
+     if(!Number.isInteger(cardIndex)||cardIndex<0||cardIndex>=cards.length)return;
+     moved=cards.splice(cardIndex,1)[0];return cards;
+    });
+    if(!result.committed||!moved){log("カードを山札の一番下に移動できませんでした。");return;}
+    roomData[from]=asCardArray(result.snapshot.val());
+   }
+   deckCards.push({...moved,faceDown:false});roomData.deck=Array.isArray(roomData.deck)?[...roomData.deck]:[20,20];roomData.deck[mySlot]=deckCards.length;
+   await update(roomRef("board"),{deck:roomData.deck});render();renderHand();return;
   }
   // 盤面同士の移動はFirebaseトランザクションで移動元・移動先を同時更新する。
   if(from!=="hand"&&to!=="hand"){
