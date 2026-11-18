@@ -490,6 +490,7 @@ function makeCard(c,zone,index){
  const kind=document.createElement("span");kind.className="kind";kind.textContent=c.kind||"カード";
  const actions=document.createElement("div");
  if(!opponentTerritory){const move=document.createElement("button");move.textContent="移動";move.onclick=()=>chooseMove(zone,index);actions.append(move);}
+ if(c.faceDown&&!String(zone).endsWith("territory")&&!opponentTerritory){const reveal=document.createElement("button");reveal.textContent="表向きに戻す";reveal.onclick=()=>flipCard(zone,index,false);actions.append(reveal);}
  if(zone==="hand"&&c.kind==="強化"){const attach=document.createElement("button");attach.textContent="虫につける";attach.onclick=()=>chooseAttachTarget(index);actions.append(attach);}
  const variantKey=String(c.name||"")+"|"+String(c.rarity||"");
  const imageUrl=cardVariantImages[variantKey]||cardImages[c.name]||normalizedCardImages[normalizeCardImageName(c.name)];
