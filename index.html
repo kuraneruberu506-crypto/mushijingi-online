@@ -541,7 +541,7 @@ function chooseShadowMirrorTargets(handIndex){
  function showAttachChoice(){
   heading.textContent="どちらの虫に魔鏡をつけますか？";
   hint.textContent="コピー先を選択してください。";
-  selected.forEach(index=>{const insect=(roomData[fieldKey]||[])[index];const b=document.createElement("button");b.type="button";b.textContent=insect.name+" に魔鏡をつける";Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",textAlign:"left"});b.onclick=async()=>{const sourceIndex=selected.find(i=>i!==index);const latest=asCardArray(roomData[fieldKey]);const target=latest[index],source=latest[sourceIndex],mirror=hand[handIndex];if(!target||!source||!mirror){picker.remove();return;}if(!target._mirrorId)target._mirrorId="mirror-"+Date.now()+"-"+Math.random().toString(36).slice(2);if(!source._mirrorId)source._mirrorId="mirror-"+Date.now()+"-"+Math.random().toString(36).slice(2);const originalSource=source.mirrorBase||{name:source.name,rarity:source.rarity,kind:source.kind};target.mirrorCopy={sourceId:source._mirrorId,name:originalSource.name,rarity:originalSource.rarity,kind:originalSource.kind};target.attachments=Array.isArray(target.attachments)?target.attachments:[];target.attachments.push({...mirror});hand.splice(handIndex,1);picker.remove();await Promise.all([set(roomRef("board/"+fieldKey),latest),set(roomRef("privateHands/"+uid),hand)]);roomData[fieldKey]=latest;render();renderHand();};panel.append(b);});
+  selected.forEach(index=>{const insect=(roomData[fieldKey]||[])[index];const b=document.createElement("button");b.type="button";b.textContent=insect.name+" に魔鏡をつける";Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",textAlign:"left"});b.onclick=async()=>{const sourceIndex=selected.find(i=>i!==index);const latest=asCardArray(roomData[fieldKey]);const target=latest[index],source=latest[sourceIndex],mirror=hand[handIndex];if(!target||!source||!mirror){picker.remove();return;}if(!target._mirrorId)target._mirrorId="mirror-"+Date.now()+"-"+Math.random().toString(36).slice(2);if(!source._mirrorId)source._mirrorId="mirror-"+Date.now()+"-"+Math.random().toString(36).slice(2);target.mirrorBase=target.mirrorBase||{name:target.name,rarity:target.rarity,kind:target.kind};const originalSource=source.mirrorBase||{name:source.name,rarity:source.rarity,kind:source.kind};target.mirrorCopy={sourceId:source._mirrorId,name:originalSource.name,rarity:originalSource.rarity,kind:originalSource.kind};target.attachments=Array.isArray(target.attachments)?target.attachments:[];target.attachments.push({...mirror});hand.splice(handIndex,1);picker.remove();await Promise.all([set(roomRef("board/"+fieldKey),latest),set(roomRef("privateHands/"+uid),hand)]);roomData[fieldKey]=latest;render();renderHand();};panel.append(b);});
   buttons.forEach(({b})=>b.disabled=true);
  }
  const cancel=document.createElement("button");cancel.type="button";cancel.textContent="キャンセル";cancel.style.width="100%";cancel.onclick=()=>picker.remove();panel.append(cancel);picker.append(panel);picker.addEventListener("click",e=>{if(e.target===picker)picker.remove();});document.body.append(picker);
@@ -631,6 +631,23 @@ async function collectTerritoryCard(index){
   territoryCollecting=false;
  }
 }
+function cleanupShadowMirrors(board){
+ let changed=false;
+ for(const slot of [0,1]){
+  const field=asCardArray(board["p"+slot+"field"]);
+  const activeIds=new Set(field.map(card=>card&&card._mirrorId).filter(Boolean));
+  field.forEach(card=>{
+   if(card?.mirrorCopy?.sourceId&&!activeIds.has(card.mirrorCopy.sourceId)){
+    delete card.mirrorCopy;
+    delete card.mirrorBase;
+    if(Array.isArray(card.attachments))card.attachments=card.attachments.filter(item=>item?.name!=="影武者の魔鏡");
+    changed=true;
+   }
+  });
+  board["p"+slot+"field"]=field;
+ }
+ return changed;
+}
 async function moveCard(from,index,to,faceUpInTerritory=false){
  if(from==="p"+(1-mySlot)+"territory"||to==="p"+(1-mySlot)+"territory"){alert("対戦相手のナワバリは対戦相手のみ操作できます。");return;}
  if(from===to)return;
@@ -648,6 +665,8 @@ async function moveCard(from,index,to,faceUpInTerritory=false){
     });
     if(!result.committed||!moved){log("カードを山札の一番下に移動できませんでした。");return;}
     roomData[from]=asCardArray(result.snapshot.val());
+    const latestBoard=(await get(roomRef("board"))).val()||blankBoard();
+    if(cleanupShadowMirrors(latestBoard)){await update(roomRef("board"),{p0field:latestBoard.p0field,p1field:latestBoard.p1field});}
    }
    deckCards.push({...moved,faceDown:false});roomData.deck=Array.isArray(roomData.deck)?[...roomData.deck]:[20,20];roomData.deck[mySlot]=deckCards.length;
    await update(roomRef("board"),{deck:roomData.deck});render();renderHand();return;
@@ -666,6 +685,7 @@ async function moveCard(from,index,to,faceUpInTerritory=false){
     target.push(moved);
     current[from]=source;
     current[to]=target;
+    cleanupShadowMirrors(current);
     return current;
    });
    if(!result.committed){log("カードの移動が反映されませんでした。もう一度お試しください。");return;}
@@ -707,8 +727,9 @@ async function moveCard(from,index,to,faceUpInTerritory=false){
    await set(roomRef("board/"+to),latestBoard[to]);
    await set(roomRef("privateHands/"+uid),latestHand);
   }else if(to==="hand"){
+   cleanupShadowMirrors(latestBoard);
    await set(roomRef("privateHands/"+uid),latestHand);
-   await set(roomRef("board/"+from),latestBoard[from]);
+   await update(roomRef("board"),{[from]:latestBoard[from],"p0field":latestBoard.p0field,"p1field":latestBoard.p1field});
   }else{
    await update(roomRef("board"),{[from]:latestBoard[from],[to]:latestBoard[to]});
   }
