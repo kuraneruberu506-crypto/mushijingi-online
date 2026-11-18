@@ -504,7 +504,7 @@ function makeCard(c,zone,index){
  if(c.faceDown||(isTerritory&&c.faceDown!==false)){const back=document.createElement("img");back.draggable=false;back.src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg";back.alt="蟲神器カードの裏面";back.onerror=()=>{back.remove();el.classList.remove("has-image");el.style.background="linear-gradient(145deg,#233d30,#101b15 55%,#8b7138)";el.style.border="2px solid #c9a84f";el.style.display="grid";el.style.placeItems="center";el.style.color="#f4df9b";el.style.fontWeight="800";el.textContent="蟲神器";};el.classList.add("has-image","territory-back");el.append(back,actions);}
  else if(imageUrl){const img=document.createElement("img");img.draggable=false;img.src=imageUrl;img.alt=displayName+"のカード画像";img.onerror=()=>{el.classList.remove("has-image");img.remove();el.prepend(title,kind);};el.classList.add("has-image");el.append(img,actions);}
  else{el.append(title,kind,actions);}
- if(Array.isArray(c.attachments)&&c.attachments.length){const attached=document.createElement("div");attached.className="attached-cards";attached.textContent="強化："+c.attachments.map(x=>x.name).join("、");Object.assign(attached.style,{fontSize:"11px",padding:"4px",marginTop:"4px",background:"rgba(245,215,110,.18)",borderRadius:"5px",whiteSpace:"normal"});el.append(attached);}
+ if(Array.isArray(c.attachments)&&c.attachments.length){const attached=document.createElement("div");attached.className="attached-cards";attached.textContent="強化："+c.attachments.map(x=>x.copyOf?"蠱術の贋作（"+x.copyOf.name+"をコピー）":x.name).join("、");Object.assign(attached.style,{fontSize:"11px",padding:"4px",marginTop:"4px",background:"rgba(245,215,110,.18)",borderRadius:"5px",whiteSpace:"normal"});el.append(attached);}
  let dragPreview=null;
  const createDragPreview=()=>{const preview=el.cloneNode(true);preview.removeAttribute("draggable");preview.style.cssText="position:fixed;left:-10000px;top:0;width:"+Math.max(72,el.getBoundingClientRect().width)+"px;opacity:1;pointer-events:none;z-index:100000;border:2px solid #f5d76e;box-shadow:0 8px 24px rgba(0,0,0,.55);transform:rotate(-3deg);";return preview;};
  el.addEventListener("dragstart",e=>{e.dataTransfer.setData("text/plain",JSON.stringify({zone,index}));e.dataTransfer.effectAllowed="move";dragPreview=createDragPreview();document.body.append(dragPreview);e.dataTransfer.setDragImage(dragPreview,Math.min(55,dragPreview.offsetWidth/2),35);});
@@ -546,9 +546,64 @@ function chooseShadowMirrorTargets(handIndex){
  }
  const cancel=document.createElement("button");cancel.type="button";cancel.textContent="キャンセル";cancel.style.width="100%";cancel.onclick=()=>picker.remove();panel.append(cancel);picker.append(panel);picker.addEventListener("click",e=>{if(e.target===picker)picker.remove();});document.body.append(picker);
 }
+function chooseForgeryCopy(handIndex){
+ const fieldKey="p"+mySlot+"field";
+ const field=asCardArray(roomData[fieldKey]);
+ const sources=[];
+ field.forEach((insect,insectIndex)=>{
+  (Array.isArray(insect.attachments)?insect.attachments:[]).forEach((attachment,attachmentIndex)=>{
+   if(attachment?.kind==="強化"&&attachment.name!=="蠱術の贋作"){
+    sources.push({insectIndex,attachmentIndex,insectName:insect.name,attachment:{name:attachment.name,rarity:attachment.rarity,kind:attachment.kind}});
+   }
+  });
+ });
+ if(!sources.length){alert("コピーできる自分の場の強化カードがありません。");return;}
+ const insects=field.map((card,index)=>({card,index})).filter(x=>x.card.kind==="虫");
+ if(!insects.length){alert("蠱術の贋作をつける自分の虫がいません。");return;}
+ const old=document.getElementById("forgeryPicker");if(old)old.remove();
+ const picker=document.createElement("div");picker.id="forgeryPicker";
+ Object.assign(picker.style,{position:"fixed",inset:"0",zIndex:"10002",background:"rgba(0,0,0,.78)",display:"flex",alignItems:"center",justifyContent:"center",padding:"18px"});
+ const panel=document.createElement("div");Object.assign(panel.style,{background:"#173b2b",border:"1px solid #c9a84f",borderRadius:"14px",padding:"18px",width:"min(100%,380px)",maxHeight:"82vh",overflowY:"auto",color:"#fff"});
+ const heading=document.createElement("h3");heading.textContent="コピーする強化カードを選択";panel.append(heading);
+ const hint=document.createElement("p");hint.textContent="自分の場についている強化カードから選びます。";panel.append(hint);
+ const cancel=document.createElement("button");cancel.type="button";cancel.textContent="キャンセル";cancel.style.width="100%";cancel.onclick=()=>picker.remove();
+ sources.forEach((source,sourceIndex)=>{
+  const b=document.createElement("button");b.type="button";b.textContent=source.attachment.name+"（"+source.insectName+"についている）";
+  Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",textAlign:"left",whiteSpace:"normal"});
+  b.onclick=()=>{
+   heading.textContent="蠱術の贋作をつける虫を選択";
+   hint.textContent="コピー元："+source.attachment.name+"。自分の虫を選んでください。";
+   sources.forEach(x=>{});
+   Array.from(panel.querySelectorAll(".forgery-source")).forEach(x=>x.remove());
+   insects.forEach(({card,index})=>{
+    const targetButton=document.createElement("button");targetButton.type="button";targetButton.className="forgery-source";
+    targetButton.textContent=card.name+" に蠱術の贋作をつける";
+    Object.assign(targetButton.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",textAlign:"left",whiteSpace:"normal"});
+    targetButton.onclick=async()=>{
+     const latest=asCardArray(roomData[fieldKey]);
+     const liveSource=latest[source.insectIndex]?.attachments?.[source.attachmentIndex];
+     const target=latest[index];
+     const forgery=hand[handIndex];
+     if(!liveSource||!target||!forgery){picker.remove();alert("対象カードが見つかりません。もう一度選択してください。");return;}
+     target.attachments=Array.isArray(target.attachments)?target.attachments:[];
+     target.attachments.push({...forgery,copyOf:{name:liveSource.name,rarity:liveSource.rarity,kind:liveSource.kind}});
+     hand.splice(handIndex,1);
+     picker.remove();
+     await Promise.all([set(roomRef("board/"+fieldKey),latest),set(roomRef("privateHands/"+uid),hand)]);
+     roomData[fieldKey]=latest;
+     render();renderHand();
+    };
+    panel.insertBefore(targetButton,cancel);
+   });
+  };
+  panel.append(b);
+ });
+ panel.append(cancel);picker.append(panel);picker.addEventListener("click",e=>{if(e.target===picker)picker.remove();});document.body.append(picker);
+}
 function chooseAttachTarget(handIndex){
  const enhancement=hand[handIndex];
  if(enhancement?.name==="影武者の魔鏡"){chooseShadowMirrorTargets(handIndex);return;}
+ if(enhancement?.name==="蠱術の贋作"){chooseForgeryCopy(handIndex);return;}
  const insects=(roomData["p"+mySlot+"field"]||[]).map((card,index)=>({card,index})).filter(x=>x.card.kind==="虫");
  if(!insects.length){alert("自分の場に虫カードがありません。");return;}
  const old=document.getElementById("attachPicker");if(old)old.remove();
