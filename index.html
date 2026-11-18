@@ -189,7 +189,7 @@ async function joinRoom(){
 }
 function arrangeBattleZones(){
  const opponent=1-mySlot, own=mySlot;
- const order=[["opponentHandZone","対戦相手の手札"],["p"+opponent+"mana","対戦相手の餌場"],["p"+opponent+"territory","対戦相手のナワバリ"],["p"+opponent+"field","対戦相手の場"],["p"+own+"field","自分の場"],["p"+own+"territory","自分のナワバリ"],["p"+own+"mana","自分の餌場"]];
+ const order=[["opponentHandZone","対戦相手の手札"],["p"+opponent+"mana","対戦相手の餌場"],["p"+opponent+"territory","対戦相手のナワバリ"],["p"+opponent+"field","対戦相手の場"],["p"+opponent+"grave","対戦相手の捨て札"],["p"+own+"field","自分の場"],["p"+own+"territory","自分のナワバリ"],["p"+own+"mana","自分の餌場"],["p"+own+"grave","自分の捨て札"]];
  const container=document.querySelector(".zones");
  for(const [zoneId,label] of order){const zone=zoneId==="opponentHandZone"?$("opponentHandZone"):container.querySelector(`[data-zone="${zoneId}"]`);if(zone){zone.querySelector("h3").textContent=label;container.appendChild(zone);}}
 }
