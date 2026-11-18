@@ -495,7 +495,7 @@ function makeCard(c,zone,index){
  const variantKey=String(c.name||"")+"|"+String(c.rarity||"");
  const imageUrl=cardVariantImages[variantKey]||cardImages[c.name]||normalizedCardImages[normalizeCardImageName(c.name)];
  const isTerritory=String(zone).endsWith("territory");
- if(c.faceDown||isTerritory){const back=document.createElement("img");back.draggable=false;back.src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg";back.alt="蟲神器カードの裏面";back.onerror=()=>{back.remove();el.classList.remove("has-image");el.style.background="linear-gradient(145deg,#233d30,#101b15 55%,#8b7138)";el.style.border="2px solid #c9a84f";el.style.display="grid";el.style.placeItems="center";el.style.color="#f4df9b";el.style.fontWeight="800";el.textContent="蟲神器";};el.classList.add("has-image","territory-back");el.append(back,actions);}
+ if(c.faceDown||(isTerritory&&c.faceDown!==false)){const back=document.createElement("img");back.draggable=false;back.src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg";back.alt="蟲神器カードの裏面";back.onerror=()=>{back.remove();el.classList.remove("has-image");el.style.background="linear-gradient(145deg,#233d30,#101b15 55%,#8b7138)";el.style.border="2px solid #c9a84f";el.style.display="grid";el.style.placeItems="center";el.style.color="#f4df9b";el.style.fontWeight="800";el.textContent="蟲神器";};el.classList.add("has-image","territory-back");el.append(back,actions);}
  else if(imageUrl){const img=document.createElement("img");img.draggable=false;img.src=imageUrl;img.alt=c.name+"のカード画像";img.onerror=()=>{el.classList.remove("has-image");img.remove();el.prepend(title,kind);};el.classList.add("has-image");el.append(img,actions);}
  else{el.append(title,kind,actions);}
  if(Array.isArray(c.attachments)&&c.attachments.length){const attached=document.createElement("div");attached.className="attached-cards";attached.textContent="強化："+c.attachments.map(x=>x.name).join("、");Object.assign(attached.style,{fontSize:"11px",padding:"4px",marginTop:"4px",background:"rgba(245,215,110,.18)",borderRadius:"5px",whiteSpace:"normal"});el.append(attached);}
@@ -535,14 +535,14 @@ function chooseMove(from,index){
  if(from==="hand")opts.push("deckBottom");
  if(from==="p"+mySlot+"territory")opts.splice(opts.indexOf("hand"),1,"revealAndHand");
  const currentCard=from==="hand"?hand[index]:(roomData[from]||[])[index];
- if(currentCard&&!String(from).endsWith("territory"))opts.push(currentCard.faceDown?"turnFaceUp":"turnFaceDown");
- const labels={p0field:"自分の場",p0territory:"自分のナワバリ",p0grave:"自分の捨て札",p0mana:"自分の餌場",p1field:"相手の場",p1territory:"相手のナワバリ",p1grave:"相手の捨て札",p1mana:"相手の餌場",hand:"自分の手札",deckBottom:"山札の一番下に置く",revealAndHand:"自分だけ表向きにして手札に加える",turnFaceDown:"裏向きにする",turnFaceUp:"表向きにする"};
+ if(currentCard&&!String(from).endsWith("territory")){opts.push(currentCard.faceDown?"turnFaceUp":"turnFaceDown");opts.push("territoryFaceUp");}
+ const labels={p0field:"自分の場",p0territory:"自分のナワバリ",p0grave:"自分の捨て札",p0mana:"自分の餌場",p1field:"相手の場",p1territory:"相手のナワバリ",p1grave:"相手の捨て札",p1mana:"相手の餌場",hand:"自分の手札",deckBottom:"山札の一番下に置く",revealAndHand:"自分だけ表向きにして手札に加える",turnFaceDown:"裏向きにする",turnFaceUp:"表向きにする",territoryFaceUp:"表向きでナワバリに追加"};
  const old=document.getElementById("movePicker");if(old)old.remove();
  const picker=document.createElement("div");picker.id="movePicker";
  Object.assign(picker.style,{position:"fixed",inset:"0",zIndex:"9999",background:"rgba(0,0,0,.72)",display:"flex",alignItems:"center",justifyContent:"center",padding:"18px"});
  const panel=document.createElement("div");Object.assign(panel.style,{background:"#173b2b",border:"1px solid #6b9b7b",borderRadius:"14px",padding:"18px",width:"min(100%,360px)",maxHeight:"80vh",overflowY:"auto",color:"#fff"});
  const heading=document.createElement("h3");heading.textContent="移動先を選択";panel.append(heading);
- opts.forEach(dest=>{const b=document.createElement("button");b.type="button";b.textContent=labels[dest];Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",whiteSpace:"normal",textAlign:"left"});b.onclick=async()=>{picker.remove();if(dest==="revealAndHand"){await collectTerritoryCard(index);}else if(dest==="turnFaceDown"||dest==="turnFaceUp")flipCard(from,index,dest==="turnFaceDown");else moveCard(from,index,dest);};panel.append(b);});
+ opts.forEach(dest=>{const b=document.createElement("button");b.type="button";b.textContent=labels[dest];Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",whiteSpace:"normal",textAlign:"left"});b.onclick=async()=>{picker.remove();if(dest==="revealAndHand"){await collectTerritoryCard(index);}else if(dest==="turnFaceDown"||dest==="turnFaceUp")flipCard(from,index,dest==="turnFaceDown");else if(dest==="territoryFaceUp")moveCard(from,index,"p"+mySlot+"territory",true);else moveCard(from,index,dest);};panel.append(b);});
  const cancel=document.createElement("button");cancel.type="button";cancel.textContent="キャンセル";cancel.style.width="100%";cancel.onclick=()=>picker.remove();panel.append(cancel);picker.append(panel);picker.addEventListener("click",e=>{if(e.target===picker)picker.remove();});document.body.append(picker);
 }
 async function flipCard(from,index,faceDown){
@@ -601,7 +601,7 @@ async function collectTerritoryCard(index){
   territoryCollecting=false;
  }
 }
-async function moveCard(from,index,to){
+async function moveCard(from,index,to,faceUpInTerritory=false){
  if(from==="p"+(1-mySlot)+"territory"||to==="p"+(1-mySlot)+"territory"){alert("対戦相手のナワバリは対戦相手のみ操作できます。");return;}
  if(from===to)return;
  try{
@@ -620,7 +620,7 @@ async function moveCard(from,index,to){
     if(!Number.isInteger(cardIndex)||cardIndex<0||cardIndex>=source.length)return;
     const moved=source.splice(cardIndex,1)[0];
     if(!moved)return;
-    moved.faceDown=false;
+    moved.faceDown=String(to).endsWith("territory")?!faceUpInTerritory:false;
     target.push(moved);
     current[from]=source;
     current[to]=target;
@@ -645,6 +645,7 @@ async function moveCard(from,index,to){
    if(!moved)return;
    if(to==="hand")return;
    latestBoard[to]=asCardArray(latestBoard[to]);
+   moved.faceDown=String(to).endsWith("territory")?!faceUpInTerritory:false;
    latestBoard[to].push(moved);
   }else{
    latestBoard[from]=asCardArray(latestBoard[from]);
