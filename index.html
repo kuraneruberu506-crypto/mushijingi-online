@@ -125,7 +125,7 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 
 <section id="game" class="hidden">
 <div class="panel">
-<div class="area-title"><div><b>ルーム：<span id="roomCode"></span></b> <span class="small muted">相手にこのIDを共有</span></div><button id="copyRoom">IDをコピー</button></div>
+<div class="area-title"><div><b>ルーム：<span id="roomCode"></span></b> <span class="small muted">相手にこのIDを共有</span></div><button id="copyRoom">IDをコピー</button><button id="exitRoom" class="danger">部屋から退出</button></div>
 <div class="boardtop" style="margin-top:12px">
 <div class="player" id="p0"><strong id="p0name">プレイヤー1</strong><span class="small">山札：<span id="p0deck">0</span>枚 / ナワバリ：<span id="p0prize">0</span>枚</span></div>
 <div class="center"><div class="controls" style="justify-content:center"><button id="turn">ターン交代</button><button id="coin">先攻・後攻を決める</button></div><div class="small muted" id="turnLabel" style="text-align:center;margin-top:6px">進行待ち</div></div>
@@ -700,14 +700,18 @@ $("startGame").onclick=async()=>{try{
  $("startGame").disabled=true;$("gameDeckStatus").textContent="カードを配布しています…";
  const [boardSnap,handSnap]=await Promise.all([get(roomRef("board")),get(roomRef("privateHands/"+uid))]);
  const currentBoard=boardSnap.val()||blankBoard();const currentHand=asCardArray(handSnap.val());
- if(asCardArray(currentBoard[territoryKey]).length>0||currentHand.length>0){$("gameDeckStatus").textContent="すでに対戦準備が完了しています。";return alert("すでに対戦準備が完了しているようです。盤面と手札を確認してください");}
+ // 再スタート時は自分側の盤面だけを初期化し、相手側のカードは保持する。
  const shuffled=[...saved];for(let i=shuffled.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
  const prepared=shuffled.map((card,i)=>({...card,_territoryId:uid+"_"+Date.now()+"_"+i}));
  const territory=prepared.slice(0,6);const startingHand=prepared.slice(6,10);const remainingDeck=prepared.slice(10);
  const deck=Array.isArray(currentBoard.deck)?[...currentBoard.deck]:[20,20];deck[mySlot]=remainingDeck.length;
- await set(roomRef("board/"+territoryKey),territory);
+ const reset={};
+ for(const suffix of ["field","grave","mana"])reset["p"+mySlot+suffix]=[];
+ reset[territoryKey]=territory;
+ reset.deck=deck;
+ reset["handCounts/"+mySlot]=startingHand.length;
  await set(roomRef("privateHands/"+uid),startingHand);
- await update(roomRef("board"),{deck,handCounts:{...(currentBoard.handCounts||{}),[mySlot]:startingHand.length}});
+ await update(roomRef("board"),reset);
  const [confirmedBoard,confirmedHand]=await Promise.all([get(roomRef("board")),get(roomRef("privateHands/"+uid))]);
  roomData=confirmedBoard.val()||blankBoard();hand=asCardArray(confirmedHand.val());deckCards=remainingDeck;deckReady=true;
  render();renderHand();renderDeck();
@@ -730,6 +734,25 @@ document.querySelectorAll(".zone[data-zone]").forEach(z=>{
 });
 $("create").onclick=createRoom;$("join").onclick=joinRoom;
 $("copyRoom").onclick=()=>navigator.clipboard?.writeText(roomId);
+$("exitRoom").onclick=async()=>{
+ if(!roomId||mySlot===undefined||mySlot===null)return;
+ if(!confirm("この部屋から退出しますか？"))return;
+ const leavingRoom=roomId,leavingSlot=mySlot,leavingUid=uid;
+ try{
+  const changes={};
+  for(const suffix of ["field","territory","grave","mana"])changes["p"+leavingSlot+suffix]=[];
+  changes["deck/"+leavingSlot]=20;
+  changes["handCounts/"+leavingSlot]=0;
+  await update(roomRef("board"),changes);
+  await set(roomRef("privateHands/"+leavingUid),null);
+  await set(roomRef("players/"+leavingUid),null);
+  cleanup();
+  roomId=null;mySlot=null;roomData={};hand=[];deckCards=[];deckReady=false;
+  $("game").classList.add("hidden");$("lobby").classList.remove("hidden");
+  $("roomInput").value=leavingRoom;
+  msg("部屋から退出しました。同じ部屋に再参加できます。");
+ }catch(e){alert("退出できませんでした："+(e?.message||String(e)));}
+};
 $("draw").onclick=async()=>{if(!deckReady||deckCards.length===0)return log("先に20枚デッキを読み込んでください");const deck=Array.isArray(roomData.deck)?[...roomData.deck]:[20,20];if(Number(deck[mySlot]??deckCards.length)<=0)return log("山札がありません");const c=deckCards.shift();hand=[...hand,c];try{await set(roomRef("privateHands/"+uid),hand);deck[mySlot]=deckCards.length;await update(roomRef("board"),{deck});roomData.deck=deck;render();renderHand();log("山札から「"+c.name+"」を引きました");}catch(e){deckCards.unshift(c);hand=hand.slice(0,-1);log("ドローに失敗しました："+(e?.message||String(e)));}};
 $("turn").onclick=async()=>{const next=1-(Number(roomData.turn)||0);await update(roomRef("board"),{turn:next});roomData.turn=next;render()};
 $("coin").onclick=async()=>{const next=Math.random()<.5?0:1;await update(roomRef("board"),{turn:next});roomData.turn=next;render()};
