@@ -56,10 +56,11 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 @media (min-width:701px) and (max-width:1100px){
  main{max-width:100%;padding:10px}
  #game>.panel{padding:12px}
- .zones{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
- .zone{min-height:158px;padding:9px}
+ .zones{grid-template-columns:1fr;gap:6px}
+ .zone{min-height:132px;padding:9px}
  .zone .cards{flex-wrap:wrap;overflow:visible;gap:7px}
- .zone[data-zone="opponentHandZone"]{grid-column:1/-1}
+ .zone[data-zone$="grave"]{display:flex!important}
+ .zone[data-zone="opponentHandZone"]{grid-column:auto}
  .card{flex:0 0 78px;width:78px;min-height:106px}
  .card.has-image img,.card.territory-back img{min-height:106px}
  .opponent-hand-back{width:52px;height:74px;flex:0 0 52px}
