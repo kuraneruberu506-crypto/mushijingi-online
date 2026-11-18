@@ -490,17 +490,19 @@ function setupCardSuggestions(inputId,listId){
 setupCardSuggestions("deckCardName","deckCardSuggestions");
 function makeCard(c,zone,index){
  const el=document.createElement("div");el.className="card";el.style.touchAction="none";const opponentTerritory=zone==="p"+(1-mySlot)+"territory";el.draggable=!opponentTerritory;el.dataset.zone=zone;el.dataset.index=index;
- const title=document.createElement("b");title.textContent=c.name;
+ const displayCard=c.mirrorCopy||c;
+ const displayName=displayCard.name||c.name;
+ const title=document.createElement("b");title.textContent=displayName;
  const kind=document.createElement("span");kind.className="kind";kind.textContent=c.kind||"カード";
  const actions=document.createElement("div");
  if(!opponentTerritory){const move=document.createElement("button");move.textContent="移動";move.onclick=()=>chooseMove(zone,index);actions.append(move);}
  if(c.faceDown&&!String(zone).endsWith("territory")&&!opponentTerritory){const reveal=document.createElement("button");reveal.textContent="表向きに戻す";reveal.onclick=()=>flipCard(zone,index,false);actions.append(reveal);}
  if(zone==="hand"&&c.kind==="強化"){const attach=document.createElement("button");attach.textContent="虫につける";attach.onclick=()=>chooseAttachTarget(index);actions.append(attach);}
- const variantKey=String(c.name||"")+"|"+String(c.rarity||"");
- const imageUrl=cardVariantImages[variantKey]||cardImages[c.name]||normalizedCardImages[normalizeCardImageName(c.name)];
+ const variantKey=String(displayCard.name||c.name||"")+"|"+String(displayCard.rarity||c.rarity||"");
+ const imageUrl=cardVariantImages[variantKey]||cardImages[displayCard.name||c.name]||normalizedCardImages[normalizeCardImageName(displayCard.name||c.name)];
  const isTerritory=String(zone).endsWith("territory");
  if(c.faceDown||(isTerritory&&c.faceDown!==false)){const back=document.createElement("img");back.draggable=false;back.src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg";back.alt="蟲神器カードの裏面";back.onerror=()=>{back.remove();el.classList.remove("has-image");el.style.background="linear-gradient(145deg,#233d30,#101b15 55%,#8b7138)";el.style.border="2px solid #c9a84f";el.style.display="grid";el.style.placeItems="center";el.style.color="#f4df9b";el.style.fontWeight="800";el.textContent="蟲神器";};el.classList.add("has-image","territory-back");el.append(back,actions);}
- else if(imageUrl){const img=document.createElement("img");img.draggable=false;img.src=imageUrl;img.alt=c.name+"のカード画像";img.onerror=()=>{el.classList.remove("has-image");img.remove();el.prepend(title,kind);};el.classList.add("has-image");el.append(img,actions);}
+ else if(imageUrl){const img=document.createElement("img");img.draggable=false;img.src=imageUrl;img.alt=displayName+"のカード画像";img.onerror=()=>{el.classList.remove("has-image");img.remove();el.prepend(title,kind);};el.classList.add("has-image");el.append(img,actions);}
  else{el.append(title,kind,actions);}
  if(Array.isArray(c.attachments)&&c.attachments.length){const attached=document.createElement("div");attached.className="attached-cards";attached.textContent="強化："+c.attachments.map(x=>x.name).join("、");Object.assign(attached.style,{fontSize:"11px",padding:"4px",marginTop:"4px",background:"rgba(245,215,110,.18)",borderRadius:"5px",whiteSpace:"normal"});el.append(attached);}
  let dragPreview=null;
@@ -522,7 +524,31 @@ function renderOpponentHand(){
  const box=$("opponentHandZone").querySelector(".cards");
  box.replaceChildren(...Array.from({length:Math.min(count,60)},()=>{const img=document.createElement("img");img.className="opponent-hand-back";img.src="https://sareal.s3.ap-northeast-1.amazonaws.com/uploads/item_image/image/436269/large_10c6e4ff-72dc-4675-9e98-5202b4ad7225.jpg";img.alt="裏向きの手札";img.draggable=false;return img;}));
 }
+function chooseShadowMirrorTargets(handIndex){
+ const fieldKey="p"+mySlot+"field";
+ const insects=(roomData[fieldKey]||[]).map((card,index)=>({card,index})).filter(x=>x.card.kind==="虫");
+ if(insects.length<2){alert("影武者の魔鏡を使うには、自分の場に虫が2つ以上必要です。");return;}
+ const old=document.getElementById("shadowMirrorPicker");if(old)old.remove();
+ const picker=document.createElement("div");picker.id="shadowMirrorPicker";
+ Object.assign(picker.style,{position:"fixed",inset:"0",zIndex:"10001",background:"rgba(0,0,0,.78)",display:"flex",alignItems:"center",justifyContent:"center",padding:"18px"});
+ const panel=document.createElement("div");Object.assign(panel.style,{background:"#173b2b",border:"1px solid #c9a84f",borderRadius:"14px",padding:"18px",width:"min(100%,380px)",maxHeight:"82vh",overflowY:"auto",color:"#fff"});
+ const heading=document.createElement("h3");heading.textContent="影武者の魔鏡：虫を2つ選択";panel.append(heading);
+ const hint=document.createElement("p");hint.textContent="コピー元とコピー先にする虫を選びます。";panel.append(hint);
+ const selected=[];
+ const buttons=[];
+ const refresh=()=>{buttons.forEach(({b,index})=>{b.style.border=selected.includes(index)?"2px solid #f5d76e":"1px solid #6b9b7b";b.style.opacity=selected.length===2&&!selected.includes(index)?".45":"1";});hint.textContent=selected.length===0?"コピー元・コピー先にする虫を1つ選択してください。":selected.length===1?"もう1つ虫を選択してください。":"選択した2つの虫："+selected.map(i=>(roomData[fieldKey]||[])[i]?.name||"虫").join(" / ");};
+ insects.forEach(({card,index})=>{const b=document.createElement("button");b.type="button";b.textContent=card.name+(card.mirrorCopy?"（コピー中）":"");Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",textAlign:"left",background:"#234b37",color:"#fff"});b.onclick=()=>{if(selected.includes(index)||selected.length>=2)return;selected.push(index);refresh();if(selected.length===2)showAttachChoice();};buttons.push({b,index});panel.append(b);});
+ function showAttachChoice(){
+  heading.textContent="どちらの虫に魔鏡をつけますか？";
+  hint.textContent="コピー先を選択してください。";
+  selected.forEach(index=>{const insect=(roomData[fieldKey]||[])[index];const b=document.createElement("button");b.type="button";b.textContent=insect.name+" に魔鏡をつける";Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",textAlign:"left"});b.onclick=async()=>{const sourceIndex=selected.find(i=>i!==index);const latest=asCardArray(roomData[fieldKey]);const target=latest[index],source=latest[sourceIndex],mirror=hand[handIndex];if(!target||!source||!mirror){picker.remove();return;}if(!target._mirrorId)target._mirrorId="mirror-"+Date.now()+"-"+Math.random().toString(36).slice(2);if(!source._mirrorId)source._mirrorId="mirror-"+Date.now()+"-"+Math.random().toString(36).slice(2);const originalSource=source.mirrorBase||{name:source.name,rarity:source.rarity,kind:source.kind};target.mirrorCopy={sourceId:source._mirrorId,name:originalSource.name,rarity:originalSource.rarity,kind:originalSource.kind};target.attachments=Array.isArray(target.attachments)?target.attachments:[];target.attachments.push({...mirror});hand.splice(handIndex,1);picker.remove();await Promise.all([set(roomRef("board/"+fieldKey),latest),set(roomRef("privateHands/"+uid),hand)]);roomData[fieldKey]=latest;render();renderHand();};panel.append(b);});
+  buttons.forEach(({b})=>b.disabled=true);
+ }
+ const cancel=document.createElement("button");cancel.type="button";cancel.textContent="キャンセル";cancel.style.width="100%";cancel.onclick=()=>picker.remove();panel.append(cancel);picker.append(panel);picker.addEventListener("click",e=>{if(e.target===picker)picker.remove();});document.body.append(picker);
+}
 function chooseAttachTarget(handIndex){
+ const enhancement=hand[handIndex];
+ if(enhancement?.name==="影武者の魔鏡"){chooseShadowMirrorTargets(handIndex);return;}
  const insects=(roomData["p"+mySlot+"field"]||[]).map((card,index)=>({card,index})).filter(x=>x.card.kind==="虫");
  if(!insects.length){alert("自分の場に虫カードがありません。");return;}
  const old=document.getElementById("attachPicker");if(old)old.remove();
