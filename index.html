@@ -236,6 +236,8 @@ function arrangeBattleZones(){
 }
 function enterGame(){
  $("lobby").classList.add("hidden");$("game").classList.remove("hidden");$("roomCode").textContent=roomId;
+ $("coin").disabled=(mySlot!==0);
+ $("coin").title=mySlot===0?"部屋を作成したプレイヤーのみ操作できます":"先攻・後攻の決定は部屋を作成したプレイヤーのみ操作できます";
  arrangeBattleZones();
  cleanup();
  unsub.push(onValue(roomRef("players"),s=>{const p=Object.values(s.val()||{}).sort((a,b)=>a.slot-b.slot);$("p0name").textContent=p.find(x=>x.slot===0)?.name||"プレイヤー1";$("p1name").textContent=p.find(x=>x.slot===1)?.name||"参加待ち";}));
@@ -755,7 +757,7 @@ $("exitRoom").onclick=async()=>{
 };
 $("draw").onclick=async()=>{if(!deckReady||deckCards.length===0)return log("先に20枚デッキを読み込んでください");const deck=Array.isArray(roomData.deck)?[...roomData.deck]:[20,20];if(Number(deck[mySlot]??deckCards.length)<=0)return log("山札がありません");const c=deckCards.shift();hand=[...hand,c];try{await set(roomRef("privateHands/"+uid),hand);deck[mySlot]=deckCards.length;await update(roomRef("board"),{deck});roomData.deck=deck;render();renderHand();log("山札から「"+c.name+"」を引きました");}catch(e){deckCards.unshift(c);hand=hand.slice(0,-1);log("ドローに失敗しました："+(e?.message||String(e)));}};
 $("turn").onclick=async()=>{const next=1-(Number(roomData.turn)||0);await update(roomRef("board"),{turn:next});roomData.turn=next;render()};
-$("coin").onclick=async()=>{const next=Math.random()<.5?0:1;await update(roomRef("board"),{turn:next});roomData.turn=next;render()};
+$("coin").onclick=async()=>{if(mySlot!==0)return alert("先攻・後攻を決められるのは部屋を作成したプレイヤーのみです。");const next=Math.random()<.5?0:1;await update(roomRef("board"),{turn:next});roomData.turn=next;render()};
 loadAllCardImages();
 loadLocalDeck();
 </script>
