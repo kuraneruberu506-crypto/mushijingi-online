@@ -755,7 +755,7 @@ $("exitRoom").onclick=async()=>{
   msg("部屋から退出しました。同じ部屋に再参加できます。");
  }catch(e){alert("退出できませんでした："+(e?.message||String(e)));}
 };
-$("draw").onclick=async()=>{if(!deckReady||deckCards.length===0)return log("先に20枚デッキを読み込んでください");const deck=Array.isArray(roomData.deck)?[...roomData.deck]:[20,20];if(Number(deck[mySlot]??deckCards.length)<=0)return log("山札がありません");const c=deckCards.shift();hand=[...hand,c];try{await set(roomRef("privateHands/"+uid),hand);deck[mySlot]=deckCards.length;await update(roomRef("board"),{deck});roomData.deck=deck;render();renderHand();log("山札から「"+c.name+"」を引きました");}catch(e){deckCards.unshift(c);hand=hand.slice(0,-1);log("ドローに失敗しました："+(e?.message||String(e)));}};
+$("draw").onclick=async()=>{if(!deckReady)return log("先に20枚デッキを読み込んでください");if(deckCards.length===0){alert("山札がなくなっています。");return;}const deck=Array.isArray(roomData.deck)?[...roomData.deck]:[20,20];if(Number(deck[mySlot]??deckCards.length)<=0){alert("山札がなくなっています。");return;}const c=deckCards.shift();hand=[...hand,c];try{await set(roomRef("privateHands/"+uid),hand);deck[mySlot]=deckCards.length;await update(roomRef("board"),{deck});roomData.deck=deck;render();renderHand();log("山札から「"+c.name+"」を引きました");if(deckCards.length===0)alert("山札がなくなりました！");}catch(e){deckCards.unshift(c);hand=hand.slice(0,-1);log("ドローに失敗しました："+(e?.message||String(e)));}};
 
 $("coin").onclick=async()=>{if(mySlot!==0)return alert("先攻・後攻を決められるのは部屋を作成したプレイヤーのみです。");const next=Math.random()<.5?0:1;await update(roomRef("board"),{turn:next});roomData.turn=next;render()};
 loadAllCardImages();
