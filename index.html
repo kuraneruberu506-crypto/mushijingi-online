@@ -474,12 +474,16 @@ async function loadAllCardImages(){
  }catch(error){console.warn("カード画像一覧を読み込めませんでした",error);}
 }
 rebuildNormalizedCardImages();
+// 漢字カード名のひらがな検索用読み仮名
+const cardNameReadings={
+ "雀蜂の毒針":"すずめばちのどくばり","玉虫色の羽化":"たまむしいろのうか","空蝉の皮鎧":"うつせみのかわよろい","蚕玉の加護":"こだまのかご","螻蛄の七芸":"けらのしちげい","蜜蝋の壁":"みつろうのかべ","針金虫の道連れ":"はりがねむしのみちづれ","天牛の大顎":"かみきりのおおあご","蓑虫の隠れ蓑":"みのむしのかくれみの","鳳蝶の蟲惑":"あげはのこわく","不滅の王台":"ふめつのおうだい","鋏虫の芯切り鋏":"はさみむしのしんきりばさみ","剣の息吹":"つるぎのいぶき","勾玉の息吹":"まがたまのいぶき","鏡の息吹":"かがみのいぶき","蟷螂の構え":"かまきりのかまえ","蠱毒の因果":"こどくのいんが","叛逆の蛮勇":"はんぎゃくのばんゆう","斑猫の手招き":"はんみょうのてまねき","百足の狂乱":"むかでのきょうらん","蜉蝣の閃き":"かげろうのひらめき","塵芥虫の爆熱弾":"ごみむしのばくねつだん","玉響の蠢き":"たまゆらのうごめき","繚乱の足掻き":"りょうらんのあがき","蟲の息吹":"むしのいぶき","埋葬虫の野辺送り":"しでむしののべおくり","飛蝗の凶相":"ばったのきょうそう","蟲封じの蛍袋":"むしふうじのほたるぶくろ","無欠の息吹":"むけつのいぶき","蚰蜒の足切り":"げじのあしきり","金蚉の甲冑":"かなぶんのかっちゅう","兜虫の甲冑":"かぶとむしのかっちゅう","口寄せの時蛹":"くちよせのときさなぎ","白夜の羽化":"びゃくやのうか","蟲祓いの煙幕":"むしばらいのえんまく","電気虫の稲妻":"でんきむしのいなずま","金色の顎門":"こんじきのあぎと","蟻の収穫":"ありのしゅうかく"
+};
 function setupCardSuggestions(inputId,listId){
  const input=$(inputId),list=$(listId);if(!input||!list)return;
  input.addEventListener("input",()=>{
   const q=normalizeCardImageName(input.value);
   list.replaceChildren();if(!q)return;
-  const matches=Object.keys(cardImages).filter(n=>normalizeCardImageName(n).includes(q)).slice(0,10);
+  const matches=Object.keys(cardImages).filter(n=>normalizeCardImageName(n).includes(q)||normalizeCardImageName(cardNameReadings[n]||"").includes(q)).slice(0,10);
   matches.forEach(name=>{const button=document.createElement("button");button.type="button";const url=cardImages[name]||normalizedCardImages[normalizeCardImageName(name)];if(url){const img=document.createElement("img");img.src=url;img.alt=name+"のカード画像";img.loading="lazy";button.append(img);}const label=document.createElement("span");label.className="suggestion-name";label.textContent=name;button.append(label);button.onclick=()=>{const rarity=$("deckCardRarity").value;const duplicate=deckCards.filter(card=>card.name===name).length>=2;if(duplicate)return alert("「"+name+"」はすでにデッキに入っています。同じカードは2枚以上入れられません。");if(deckCards.length>=20)return alert("デッキは20枚までです");deckCards.push({name,rarity,kind:$("deckCardKind").value});deckReady=deckCards.length===20;saveLocalDeck();renderDeck();};list.append(button);});
  });
 }
