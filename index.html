@@ -485,12 +485,11 @@ function setupCardSuggestions(inputId,listId){
 }
 setupCardSuggestions("deckCardName","deckCardSuggestions");
 function makeCard(c,zone,index){
- const el=document.createElement("div");el.className="card";el.draggable=true;el.dataset.zone=zone;el.dataset.index=index;
+ const el=document.createElement("div");el.className="card";const opponentTerritory=zone==="p"+(1-mySlot)+"territory";el.draggable=!opponentTerritory;el.dataset.zone=zone;el.dataset.index=index;
  const title=document.createElement("b");title.textContent=c.name;
  const kind=document.createElement("span");kind.className="kind";kind.textContent=c.kind||"カード";
  const actions=document.createElement("div");
- const move=document.createElement("button");move.textContent="移動";move.onclick=()=>chooseMove(zone,index);
- actions.append(move);
+ if(!opponentTerritory){const move=document.createElement("button");move.textContent="移動";move.onclick=()=>chooseMove(zone,index);actions.append(move);}
  if(zone==="hand"&&c.kind==="強化"){const attach=document.createElement("button");attach.textContent="虫につける";attach.onclick=()=>chooseAttachTarget(index);actions.append(attach);}
  const variantKey=String(c.name||"")+"|"+String(c.rarity||"");
  const imageUrl=cardVariantImages[variantKey]||cardImages[c.name]||normalizedCardImages[normalizeCardImageName(c.name)];
@@ -530,6 +529,7 @@ function chooseAttachTarget(handIndex){
  const cancel=document.createElement("button");cancel.type="button";cancel.textContent="キャンセル";cancel.style.width="100%";cancel.onclick=()=>picker.remove();panel.append(cancel);picker.append(panel);document.body.append(picker);
 }
 function chooseMove(from,index){
+ if(from==="p"+(1-mySlot)+"territory"){alert("対戦相手のナワバリは対戦相手のみ操作できます。");return;}
  const opts=mySlot===0?["p0field","p0territory","p0grave","p0mana","hand"]:["p1field","p1territory","p1grave","p1mana","hand"];
  if(from==="hand")opts.push("deckBottom");
  if(from==="p"+mySlot+"territory")opts.splice(opts.indexOf("hand"),1,"revealAndHand");
@@ -601,6 +601,7 @@ async function collectTerritoryCard(index){
  }
 }
 async function moveCard(from,index,to){
+ if(from==="p"+(1-mySlot)+"territory"||to==="p"+(1-mySlot)+"territory"){alert("対戦相手のナワバリは対戦相手のみ操作できます。");return;}
  if(from===to)return;
  try{
   if(from==="hand"&&to==="deckBottom"){
@@ -724,6 +725,7 @@ $("startGame").onclick=async()=>{try{
 
 async function handleCardDrop(from,index,to){
  if(!to||from===to)return;
+ if(from==="p"+(1-mySlot)+"territory"||to==="p"+(1-mySlot)+"territory"){alert("対戦相手のナワバリは対戦相手のみ操作できます。");return;}
  if(from==="p"+mySlot+"territory"&&to==="hand"){await collectTerritoryCard(index);return;}
  await moveCard(from,index,to);
 }
