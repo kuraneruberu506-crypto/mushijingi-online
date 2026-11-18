@@ -44,6 +44,34 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
  .lobby-grid{grid-template-columns:1fr}#lobby{margin:10px auto;padding:10px}
 }
 .card-search-tools{display:flex;gap:8px;flex-wrap:wrap}.card-search-tools input{flex:1;min-width:140px}.card-search-note{font-size:12px;color:var(--muted);line-height:1.6}.decktools{display:grid;gap:10px}.decklist{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;max-height:240px;overflow:auto}.deckitem{display:flex;justify-content:space-between;align-items:center;gap:6px;background:#111b15;border:1px solid var(--line);border-radius:8px;padding:7px;font-size:12px}.deckitem button{padding:4px 7px;font-size:11px}.deckitem.deck-card{position:relative;display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;padding:6px;min-width:0}.deck-card .deck-thumb{width:100%;aspect-ratio:3/4;object-fit:contain;background:#080d09;border-radius:5px}.deck-card .deck-no{font-size:10px;color:var(--muted)}.deck-card .deck-name{font-size:11px;font-weight:700;overflow-wrap:anywhere;min-height:30px}.deck-card .deck-meta{font-size:10px;color:#ffe29a}.deck-card button{width:100%;margin-top:4px}.deck-manager{display:grid;gap:10px}.deck-section{display:grid;gap:9px;padding:12px;background:#111b15;border:1px solid var(--line);border-radius:11px}.deck-section-title{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}.deck-label{font-size:12px;color:var(--muted);font-weight:700}.deck-name-input,.deck-select{width:100%;min-width:0;box-sizing:border-box;background:#0d160f;color:white;border:1px solid var(--line);border-radius:9px;padding:12px;font-size:15px}.deck-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.deck-actions button{min-height:42px;padding:9px 6px}.deck-list-heading{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:5px}.deck-footer{display:flex;justify-content:flex-end}.deckstatus{font-weight:800;color:var(--gold);font-size:14px}.suggestions{display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:7px;max-height:300px;overflow:auto}.suggestions button{text-align:left;background:#17231a;font-size:12px;padding:5px;display:flex;flex-direction:column;gap:4px;min-width:0}.suggestions img{width:100%;aspect-ratio:3/4;object-fit:contain;background:#080d09;border-radius:5px}.suggestions .suggestion-name{font-weight:700;overflow-wrap:anywhere}.rarity-tag{font-size:10px;color:#ffe29a;margin-top:2px}.card .rarity-badge{position:absolute;top:3px;left:3px;background:#1b211de8;color:#ffe29a;border:1px solid #c9a84f;border-radius:5px;padding:2px 4px;font-size:9px;font-weight:800;z-index:2}
+
+/* iPad・タブレット向け盤面レイアウトの統一 */
+.zone[data-zone$="grave"]{display:block!important}
+.zone{min-width:0;min-height:150px;display:flex;flex-direction:column}
+.zone h3{min-height:18px;line-height:1.4}
+.zone .cards{min-width:0;flex:1;align-content:flex-start}
+.zone[data-zone$="grave"] .cards{min-height:92px}
+.card{flex:0 0 75px;width:75px;min-height:100px}
+.card.has-image img,.card.territory-back img{width:100%;height:100%;min-height:100px;object-fit:fill}
+@media (min-width:701px) and (max-width:1100px){
+ main{max-width:100%;padding:10px}
+ #game>.panel{padding:12px}
+ .zones{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .zone{min-height:158px;padding:9px}
+ .zone .cards{flex-wrap:wrap;overflow:visible;gap:7px}
+ .zone[data-zone="opponentHandZone"]{grid-column:1/-1}
+ .card{flex:0 0 78px;width:78px;min-height:106px}
+ .card.has-image img,.card.territory-back img{min-height:106px}
+ .opponent-hand-back{width:52px;height:74px;flex:0 0 52px}
+ .handzone{min-height:145px}
+ .handzone .cards{flex-wrap:nowrap;overflow-x:auto}
+ .handzone .card{flex:0 0 78px;width:78px}
+}
+@media(max-width:700px){
+ .zone[data-zone$="grave"]{display:flex!important}
+ .zone{min-height:132px}
+ .zone[data-zone$="grave"] .cards{min-height:94px}
+}
 </style>
 </head>
 <body>
@@ -666,7 +694,7 @@ $("startGame").onclick=async()=>{try{
  const deck=Array.isArray(currentBoard.deck)?[...currentBoard.deck]:[20,20];deck[mySlot]=remainingDeck.length;
  await set(roomRef("board/"+territoryKey),territory);
  await set(roomRef("privateHands/"+uid),startingHand);
- await update(roomRef("board"),{deck});
+ await update(roomRef("board"),{deck,handCounts:{...(currentBoard.handCounts||{}),[mySlot]:startingHand.length}});
  const [confirmedBoard,confirmedHand]=await Promise.all([get(roomRef("board")),get(roomRef("privateHands/"+uid))]);
  roomData=confirmedBoard.val()||blankBoard();hand=asCardArray(confirmedHand.val());deckCards=remainingDeck;deckReady=true;
  render();renderHand();renderDeck();
