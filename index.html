@@ -485,7 +485,7 @@ function setupCardSuggestions(inputId,listId){
 }
 setupCardSuggestions("deckCardName","deckCardSuggestions");
 function makeCard(c,zone,index){
- const el=document.createElement("div");el.className="card";const opponentTerritory=zone==="p"+(1-mySlot)+"territory";el.draggable=!opponentTerritory;el.dataset.zone=zone;el.dataset.index=index;
+ const el=document.createElement("div");el.className="card";el.style.touchAction="none";const opponentTerritory=zone==="p"+(1-mySlot)+"territory";el.draggable=!opponentTerritory;el.dataset.zone=zone;el.dataset.index=index;
  const title=document.createElement("b");title.textContent=c.name;
  const kind=document.createElement("span");kind.className="kind";kind.textContent=c.kind||"カード";
  const actions=document.createElement("div");
@@ -504,7 +504,7 @@ function makeCard(c,zone,index){
  el.addEventListener("dragend",()=>{if(dragPreview){dragPreview.remove();dragPreview=null;}});
  let touchStart=null,touchPreview=null;
  el.addEventListener("touchstart",e=>{if(e.target.closest("button"))return;const t=e.touches[0];touchStart={x:t.clientX,y:t.clientY,moved:false};},{passive:true});
- el.addEventListener("touchmove",e=>{if(!touchStart)return;const t=e.touches[0];if(Math.abs(t.clientX-touchStart.x)+Math.abs(t.clientY-touchStart.y)>12){touchStart.moved=true;e.preventDefault();if(!touchPreview){touchPreview=el.cloneNode(true);touchPreview.removeAttribute("draggable");Object.assign(touchPreview.style,{position:"fixed",left:"0",top:"0",width:Math.max(72,el.getBoundingClientRect().width)+"px",margin:"0",opacity:"0.95",pointerEvents:"none",zIndex:"100000",transform:"translate(-50%,-50%) rotate(-3deg)",border:"2px solid #f5d76e",boxShadow:"0 8px 24px rgba(0,0,0,.55)"});document.body.append(touchPreview);}touchPreview.style.left=t.clientX+"px";touchPreview.style.top=t.clientY+"px";}},{passive:false});
+ el.addEventListener("touchmove",e=>{if(!touchStart)return;e.preventDefault();const t=e.touches[0];if(Math.abs(t.clientX-touchStart.x)+Math.abs(t.clientY-touchStart.y)>12){touchStart.moved=true;if(!touchPreview){touchPreview=el.cloneNode(true);touchPreview.removeAttribute("draggable");Object.assign(touchPreview.style,{position:"fixed",left:"0",top:"0",width:Math.max(72,el.getBoundingClientRect().width)+"px",margin:"0",opacity:"0.95",pointerEvents:"none",zIndex:"100000",transform:"translate(-50%,-50%) rotate(-3deg)",border:"2px solid #f5d76e",boxShadow:"0 8px 24px rgba(0,0,0,.55)"});document.body.append(touchPreview);}touchPreview.style.left=t.clientX+"px";touchPreview.style.top=t.clientY+"px";}},{passive:false});
  el.addEventListener("touchend",e=>{if(!touchStart)return;const moved=touchStart.moved;touchStart=null;if(touchPreview){touchPreview.remove();touchPreview=null;}if(!moved)return;const t=e.changedTouches[0];const hits=document.elementsFromPoint(t.clientX,t.clientY);const dropZone=hits.map(node=>node.closest?.(".zone[data-zone]")).find(Boolean);if(dropZone&&dropZone.dataset.zone!==zone)handleCardDrop(zone,index,dropZone.dataset.zone);});
  el.addEventListener("touchcancel",()=>{touchStart=null;if(touchPreview){touchPreview.remove();touchPreview=null;}});
  return el;
