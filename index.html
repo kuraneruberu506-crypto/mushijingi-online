@@ -593,7 +593,7 @@ async function collectTerritoryCard(index){
    return;
   }
   const oldHand=asCardArray(handSnap.val());
-  const nextHand=[...oldHand,{...card,faceDown:false}];
+  const nextHand=[...oldHand,{...card,faceDown:false,_territoryDrawn:true}];
   await set(roomRef("privateHands/"+uid),nextHand);
   const result=await runTransaction(roomRef("board/"+zone),current=>{
    const cards=asCardArray(current);
@@ -619,9 +619,22 @@ async function collectTerritoryCard(index){
   territoryCollecting=false;
  }
 }
+function isTerritoryOnlyCard(card){
+ return ["飛び出す","迎撃"].includes(String(card?.name||"").trim());
+}
+function canPlayTerritoryOnlyCard(card,to){
+ const field="p"+mySlot+"field";
+ if(to===field&&isTerritoryOnlyCard(card)&&!card._territoryDrawn){
+  alert("「飛び出す」「迎撃」はナワバリから手札に加えた場合のみ使用できます。");
+  return false;
+ }
+ return true;
+}
 async function moveCard(from,index,to){
  if(from==="p"+(1-mySlot)+"territory"||to==="p"+(1-mySlot)+"territory"){alert("対戦相手のナワバリは対戦相手のみ操作できます。");return;}
  if(from===to)return;
+ const candidate=from==="hand"?hand[Number(index)]:(roomData[from]||[])[Number(index)];
+ if(!canPlayTerritoryOnlyCard(candidate,to))return;
  try{
   if(from==="hand"&&to==="deckBottom"){
    const moved=hand.splice(index,1)[0];if(!moved)return;
