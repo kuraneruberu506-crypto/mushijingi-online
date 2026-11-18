@@ -25,7 +25,7 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 .card{width:75px;min-height:95px;border-radius:8px;border:1px solid #b69b5e;background:linear-gradient(145deg,#f2e5bf,#c7b27c);color:#29251a;padding:6px;font-size:11px;display:flex;flex-direction:column;justify-content:space-between;cursor:grab;box-shadow:0 3px 7px #0005;overflow-wrap:anywhere}.card.has-image{padding:0;position:relative;overflow:hidden;background:#111}.card.has-image img{display:block;width:100%;height:100%;min-height:95px;object-fit:fill}.card.has-image button{position:absolute;bottom:3px;right:3px;opacity:.95}
 .card.territory-back{padding:0;background:#111;overflow:hidden}.card.territory-back img{display:block;width:100%;height:100%;min-height:95px;object-fit:fill}.card.territory-back button{position:absolute;bottom:3px;right:3px;z-index:2}.card b{font-size:12px}.card .kind{font-size:9px;color:#594d31}.card button{font-size:10px;padding:3px;background:#65542e;color:white}
 .zone.over{background:#314d37;outline:2px solid var(--green)}
-.playerarea{display:grid;gap:9px}.game-log-list{display:grid;gap:5px;max-height:180px;overflow:auto;font-size:12px}.game-log-entry{padding:6px 8px;background:#111b15;border-radius:6px;overflow-wrap:anywhere}.area-title{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.playerarea{display:grid;gap:9px}.area-title{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .controls{display:flex;gap:7px;flex-wrap:wrap}.controls button{font-size:13px;padding:8px}
 .hands-header{display:grid;grid-template-columns:1fr 1fr;gap:10px}.hand-player{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#111b15;border:1px solid var(--line);border-radius:10px;padding:8px;min-width:0}.hand-player-title{display:flex;flex-direction:column;gap:4px}.hand-back-preview{width:42px;height:60px;object-fit:fill;border-radius:4px;border:1px solid #9b8955;flex:0 0 auto}.hand-player .small{font-size:11px}.handzone{min-height:140px}.handzone .card{width:82px;min-height:112px}.opponent-hand-zone{min-height:112px}.opponent-hand-zone .cards{display:flex;gap:6px;flex-wrap:wrap}.opponent-hand-back{width:52px;height:74px;object-fit:fill;border:1px solid #9b8955;border-radius:5px;flex:0 0 auto}
 #log{max-height:150px;overflow:auto;font-size:12px;color:var(--muted);white-space:pre-wrap}
@@ -155,10 +155,6 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 </div>
 </div>
 
-<div class="panel">
-<div class="area-title"><b>対戦ログ</b><span class="small muted">両プレイヤー共通・非公開カード名は非表示</span></div>
-<div id="gameLogList" class="game-log-list" aria-live="polite"></div>
-</div>
 <div class="panel playerarea">
 <div class="zone handzone" id="myHand" data-zone="hand"><div class="cards"></div></div>
 <div class="controls">
@@ -204,21 +200,7 @@ if(cfgReady){
 
 function asCardArray(value){if(Array.isArray(value))return value.filter(x=>x!=null);if(value&&typeof value==="object")return Object.keys(value).sort((a,b)=>Number(a)-Number(b)).map(k=>value[k]).filter(x=>x!=null);return []}
 function msg(t){$("lobbyMsg").textContent=t}
-function log(t){
- if(!db||!roomId||mySlot==null)return;
- const safeText=String(t||"操作を記録しました").replace(/「[^」]*」/g,"カード").slice(0,180);
- push(roomRef("board/logs"),{text:safeText,slot:mySlot,time:Date.now()}).catch(e=>console.error("ログ保存失敗",e));
-}
-function renderLogs(){
- const box=$("gameLogList");if(!box)return;
- const entries=asCardArray(roomData.logs).sort((a,b)=>(a.time||0)-(b.time||0)).slice(-50);
- box.replaceChildren(...entries.map(entry=>{
-  const line=document.createElement("div");line.className="game-log-entry";
-  const time=new Date(entry.time||Date.now()).toLocaleTimeString("ja-JP",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
-  line.textContent=time+" "+(entry.slot===mySlot?"あなた":"相手")+"："+(entry.text||"操作");
-  return line;
- }));
-}
+function log(t){}
 function cleanup(){unsub.forEach(f=>f());unsub=[]}
 function roomRef(path=""){return ref(db,`rooms/${roomId}${path?"/"+path:""}`)}
 async function createRoom(){
@@ -271,7 +253,6 @@ function render(){
  if($("myDeckNearHand"))$("myDeckNearHand").textContent=ownDeck;
  if($("opponentDeckNearHand"))$("opponentDeckNearHand").textContent=opponentDeck;
  renderOpponentHand();
- renderLogs();
  $("turnLabel").textContent="現在のターン："+($("p"+(roomData.turn||0)+"name").textContent);
  document.querySelectorAll(".zone[data-zone]").forEach(z=>{if(z.dataset.zone==="hand")return;const arr=asCardArray(roomData[z.dataset.zone]);z.querySelector(".cards").replaceChildren(...arr.map((c,idx)=>makeCard(c,z.dataset.zone,idx)));});
 
@@ -593,7 +574,7 @@ async function collectTerritoryCard(index){
    return;
   }
   const oldHand=asCardArray(handSnap.val());
-  const nextHand=[...oldHand,{...card,faceDown:false,_territoryDrawn:true}];
+  const nextHand=[...oldHand,{...card,faceDown:false}];
   await set(roomRef("privateHands/"+uid),nextHand);
   const result=await runTransaction(roomRef("board/"+zone),current=>{
    const cards=asCardArray(current);
@@ -619,22 +600,9 @@ async function collectTerritoryCard(index){
   territoryCollecting=false;
  }
 }
-function isTerritoryOnlyCard(card){
- return ["飛び出す","迎撃"].includes(String(card?.name||"").trim());
-}
-function canPlayTerritoryOnlyCard(card,to){
- const field="p"+mySlot+"field";
- if(to===field&&isTerritoryOnlyCard(card)&&!card._territoryDrawn){
-  alert("「飛び出す」「迎撃」はナワバリから手札に加えた場合のみ使用できます。");
-  return false;
- }
- return true;
-}
 async function moveCard(from,index,to){
  if(from==="p"+(1-mySlot)+"territory"||to==="p"+(1-mySlot)+"territory"){alert("対戦相手のナワバリは対戦相手のみ操作できます。");return;}
  if(from===to)return;
- const candidate=from==="hand"?hand[Number(index)]:(roomData[from]||[])[Number(index)];
- if(!canPlayTerritoryOnlyCard(candidate,to))return;
  try{
   if(from==="hand"&&to==="deckBottom"){
    const moved=hand.splice(index,1)[0];if(!moved)return;
