@@ -73,6 +73,18 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
  .zone{min-height:132px}
  .zone[data-zone$="grave"] .cards{min-height:94px}
 }
+
+/* 全端末でスマホと同じ盤面レイアウトに統一 */
+.zones{grid-template-columns:1fr!important;gap:6px!important}
+.zone[data-zone$="grave"]{display:flex!important}
+.zone{min-width:0;min-height:132px;padding:6px;display:flex;flex-direction:column}
+.zone h3{font-size:11px;min-height:18px;margin-bottom:6px;line-height:1.4}
+.zone .cards{display:flex;flex-wrap:nowrap!important;overflow-x:auto!important;overflow-y:hidden;gap:5px;padding-bottom:4px;min-height:100px;align-items:flex-start;scrollbar-width:thin}
+.zone[data-zone$="grave"] .cards{min-height:94px}
+.card{flex:0 0 66px!important;width:66px;min-height:94px;padding:4px;font-size:10px}
+.card.has-image img,.card.territory-back img{width:100%;height:94px;min-height:94px;object-fit:fill}
+.card.has-image button,.card.territory-back button{font-size:9px;padding:3px}
+.card b{font-size:10px}
 </style>
 </head>
 <body>
