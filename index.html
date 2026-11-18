@@ -568,13 +568,13 @@ function chooseForgeryCopy(handIndex){
  const hint=document.createElement("p");hint.textContent="自分の場についている強化カードから選びます。";panel.append(hint);
  const cancel=document.createElement("button");cancel.type="button";cancel.textContent="キャンセル";cancel.style.width="100%";cancel.onclick=()=>picker.remove();
  sources.forEach((source,sourceIndex)=>{
-  const b=document.createElement("button");b.type="button";b.textContent=source.attachment.name+"（"+source.insectName+"についている）";
+  const b=document.createElement("button");b.type="button";b.className="forgery-source-choice";b.textContent=source.attachment.name+"（"+source.insectName+"についている）";
   Object.assign(b.style,{display:"block",width:"100%",margin:"8px 0",padding:"13px",textAlign:"left",whiteSpace:"normal"});
   b.onclick=()=>{
    heading.textContent="蠱術の贋作をつける虫を選択";
    hint.textContent="コピー元："+source.attachment.name+"。自分の虫を選んでください。";
    sources.forEach(x=>{});
-   Array.from(panel.querySelectorAll(".forgery-source")).forEach(x=>x.remove());
+   Array.from(panel.querySelectorAll(".forgery-source-choice,.forgery-source")).forEach(x=>x.remove());
    insects.forEach(({card,index})=>{
     const targetButton=document.createElement("button");targetButton.type="button";targetButton.className="forgery-source";
     targetButton.textContent=card.name+" に蠱術の贋作をつける";
