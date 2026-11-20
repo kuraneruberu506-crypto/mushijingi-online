@@ -182,7 +182,7 @@ const firebaseConfig = {
 
 const $ = id => document.getElementById(id);
 let db, auth, uid, roomId, mySlot, roomData={}, hand=[], unsub=[];
-let isSpectator=false, spectatorHands=[[],[]];
+let isSpectator=false, spectatorHands=[[],[]], spectatorHandUids=[null,null];
 let deckCards=[], deckReady=false;
 const blankBoard = () => ({p0field:[],p0territory:[],p0grave:[],p0mana:[],p1field:[],p1territory:[],p1grave:[],p1mana:[],deck:[20,20],handCounts:[0,0],turn:0,logs:[]});
 const cfgReady = !firebaseConfig.apiKey.startsWith("YOUR_");
@@ -259,13 +259,9 @@ function enterGame(){
  $("coin").title=mySlot===0?"部屋を作成したプレイヤーのみ操作できます":"先攻・後攻の決定は部屋を作成したプレイヤーのみ操作できます";
  arrangeBattleZones();
  cleanup();
- unsub.push(onValue(roomRef("players"),s=>{const p=Object.values(s.val()||{}).sort((a,b)=>a.slot-b.slot);$("p0name").textContent=p.find(x=>x.slot===0)?.name||"プレイヤー1";$("p1name").textContent=p.find(x=>x.slot===1)?.name||"参加待ち";}));
+ unsub.push(onValue(roomRef("players"),s=>{const players=s.val()||{};const p=Object.values(players).sort((a,b)=>a.slot-b.slot);$("p0name").textContent=p.find(x=>x.slot===0)?.name||"プレイヤー1";$("p1name").textContent=p.find(x=>x.slot===1)?.name||"参加待ち";if(isSpectator){for(let slot=0;slot<2;slot++){const entry=Object.entries(players).find(([playerUid,player])=>player.slot===slot);const playerUid=entry?.[0]||null;if(playerUid!==spectatorHandUids[slot]){spectatorHandUids[slot]=playerUid;if(playerUid){unsub.push(onValue(roomRef("privateHands/"+playerUid),handSnap=>{spectatorHands[slot]=asCardArray(handSnap.val());renderSpectatorHands();}));}else{spectatorHands[slot]=[];renderSpectatorHands();}}}}}));
  unsub.push(onValue(roomRef("board"),s=>{roomData=s.val()||blankBoard();render();}));
  if(isSpectator){
-  for(let slot=0;slot<2;slot++){
-   const watchedSlot=slot;
-   unsub.push(onValue(roomRef("privateHands/p"+watchedSlot),s=>{spectatorHands[watchedSlot]=asCardArray(s.val());renderSpectatorHands();}));
-  }
   $("draw").hidden=true;
  }else{
   unsub.push(onValue(roomRef("privateHands/"+uid),s=>{hand=asCardArray(s.val());renderHand();set(roomRef("board/handCounts/"+mySlot),hand.length).catch(e=>console.error("手札枚数の同期に失敗",e));}));
