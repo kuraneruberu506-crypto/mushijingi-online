@@ -96,7 +96,7 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 
 <div class="lobby-grid">
 <div><b>ルームを作成</b><p class="small muted">新しいルームを作って友人を招待します。</p><button class="primary" id="create">ルーム作成</button></div>
-<div><b>ルームに参加</b><p class="small muted">友人から教えてもらったIDを入力。</p><input id="roomInput" placeholder="ルームID" maxlength="8" style="width:100%;margin:0 0 7px"><button id="join">参加する</button></div>
+<div><b>ルームに参加</b><p class="small muted">友人から教えてもらったIDを入力。</p><input id="roomInput" placeholder="ルームID" maxlength="8" style="width:100%;margin:0 0 7px"><button id="join">対戦に参加</button><button id="watchRoom" style="margin-top:6px;width:100%">観戦する</button></div>
 </div>
 <p id="lobbyMsg" class="small muted"></p>
 <div class="panel playerarea" id="deckPanel">
@@ -155,12 +155,13 @@ input{min-width:0}button{cursor:pointer;background:#344b39;border-color:#59745e;
 </div>
 </div>
 
-<div class="panel playerarea">
+<div class="panel playerarea" id="playerHandPanel">
 <div class="zone handzone" id="myHand" data-zone="hand"><div class="cards"></div></div>
 <div class="controls">
 <button id="draw">山札から1枚引く</button>
 </div>
 <div class="small muted">手札には「山札から1枚引く」でカードを追加できます。</div>
+<div class="panel playerarea hidden" id="spectatorHandPanel"><b>両プレイヤーの手札（観戦）</b><div class="zone handzone" id="spectatorP0Hand"><h3>プレイヤー1の手札</h3><div class="cards"></div></div><div class="zone handzone" id="spectatorP1Hand"><h3>プレイヤー2の手札</h3><div class="cards"></div></div></div>
 </div>
 
 </section>
@@ -181,6 +182,7 @@ const firebaseConfig = {
 
 const $ = id => document.getElementById(id);
 let db, auth, uid, roomId, mySlot, roomData={}, hand=[], unsub=[];
+let isSpectator=false, spectatorHands=[[],[]];
 let deckCards=[], deckReady=false;
 const blankBoard = () => ({p0field:[],p0territory:[],p0grave:[],p0mana:[],p1field:[],p1territory:[],p1grave:[],p1mana:[],deck:[20,20],handCounts:[0,0],turn:0,logs:[]});
 const cfgReady = !firebaseConfig.apiKey.startsWith("YOUR_");
@@ -213,7 +215,18 @@ async function createRoom(){
  await set(roomRef("privateHands/"+uid),[]);
  enterGame();
 }
+async function joinAsSpectator(){
+ if(!db||!uid)return msg("Firebaseに接続してから観戦してください。");
+ const requestedRoom=$("roomInput").value.trim().toUpperCase();
+ if(!requestedRoom)return msg("ルームIDを入力してください。");
+ roomId=requestedRoom;
+ const meta=await get(roomRef("meta"));
+ if(!meta.exists()){roomId=null;return msg("ルームが見つかりません。IDを確認してください。");}
+ isSpectator=true;mySlot=0;hand=[];spectatorHands=[[],[]];
+ enterGame();
+}
 async function joinRoom(){
+ isSpectator=false;
  if(!db||!uid)return msg("先にREADMEのFirebase設定を完了してください。");
  roomId=$("roomInput").value.trim().toUpperCase();if(!roomId)return msg("ルームIDを入力してください。");
  const meta=await get(roomRef("meta"));if(!meta.exists())return msg("ルームが見つかりません。IDを確認してください。");
@@ -236,13 +249,28 @@ function arrangeBattleZones(){
 }
 function enterGame(){
  $("lobby").classList.add("hidden");$("game").classList.remove("hidden");$("roomCode").textContent=roomId;
+ $("game").classList.toggle("spectator-view",isSpectator);
+ $("playerHandPanel").classList.toggle("hidden",isSpectator);
+ $("spectatorHandPanel").classList.toggle("hidden",!isSpectator);
+ $("gameDeckPanel").classList.toggle("hidden",isSpectator);
+ $("opponentHandZone").classList.toggle("hidden",isSpectator);
+ $("coin").hidden=isSpectator;
  $("coin").disabled=(mySlot!==0);
  $("coin").title=mySlot===0?"部屋を作成したプレイヤーのみ操作できます":"先攻・後攻の決定は部屋を作成したプレイヤーのみ操作できます";
  arrangeBattleZones();
  cleanup();
  unsub.push(onValue(roomRef("players"),s=>{const p=Object.values(s.val()||{}).sort((a,b)=>a.slot-b.slot);$("p0name").textContent=p.find(x=>x.slot===0)?.name||"プレイヤー1";$("p1name").textContent=p.find(x=>x.slot===1)?.name||"参加待ち";}));
  unsub.push(onValue(roomRef("board"),s=>{roomData=s.val()||blankBoard();render();}));
- unsub.push(onValue(roomRef("privateHands/"+uid),s=>{hand=asCardArray(s.val());renderHand();set(roomRef("board/handCounts/"+mySlot),hand.length).catch(e=>console.error("手札枚数の同期に失敗",e));}));
+ if(isSpectator){
+  for(let slot=0;slot<2;slot++){
+   const watchedSlot=slot;
+   unsub.push(onValue(roomRef("privateHands/p"+watchedSlot),s=>{spectatorHands[watchedSlot]=asCardArray(s.val());renderSpectatorHands();}));
+  }
+  $("draw").hidden=true;
+ }else{
+  unsub.push(onValue(roomRef("privateHands/"+uid),s=>{hand=asCardArray(s.val());renderHand();set(roomRef("board/handCounts/"+mySlot),hand.length).catch(e=>console.error("手札枚数の同期に失敗",e));}));
+  $("draw").hidden=false;
+ }
  
 
 }
@@ -543,14 +571,15 @@ function setupCardSuggestions(inputId,listId){
 }
 setupCardSuggestions("deckCardName","deckCardSuggestions");
 function makeCard(c,zone,index){
- const el=document.createElement("div");el.className="card";el.style.touchAction="none";const opponentTerritory=zone==="p"+(1-mySlot)+"territory";el.draggable=!opponentTerritory;el.dataset.zone=zone;el.dataset.index=index;
+ const el=document.createElement("div");el.className="card";el.style.touchAction="none";const opponentTerritory=zone==="p"+(1-mySlot)+"territory";el.draggable=!isSpectator&&!opponentTerritory;el.dataset.zone=zone;el.dataset.index=index;
  const displayCard=c.mirrorCopy||c;
  const displayName=displayCard.name||c.name;
  const title=document.createElement("b");title.textContent=displayName;
  const kind=document.createElement("span");kind.className="kind";kind.textContent=c.kind||"カード";
  const actions=document.createElement("div");
- if(!opponentTerritory){const move=document.createElement("button");move.textContent="移動";move.onclick=()=>chooseMove(zone,index);actions.append(move);}
- if(c.faceDown&&!String(zone).endsWith("territory")&&!opponentTerritory){const reveal=document.createElement("button");reveal.textContent="表向きに戻す";reveal.onclick=()=>flipCard(zone,index,false);actions.append(reveal);}
+ if(isSpectator){el.style.cursor="default";}
+ if(!isSpectator&&!opponentTerritory){const move=document.createElement("button");move.textContent="移動";move.onclick=()=>chooseMove(zone,index);actions.append(move);}
+ if(!isSpectator&&c.faceDown&&!String(zone).endsWith("territory")&&!opponentTerritory){const reveal=document.createElement("button");reveal.textContent="表向きに戻す";reveal.onclick=()=>flipCard(zone,index,false);actions.append(reveal);}
  if(zone==="hand"&&c.kind==="強化"){const attach=document.createElement("button");attach.textContent="虫につける";attach.onclick=()=>chooseAttachTarget(index);actions.append(attach);}
  const variantKey=String(displayCard.name||c.name||"")+"|"+String(displayCard.rarity||c.rarity||"");
  const imageUrl=cardVariantImages[variantKey]||cardImages[displayCard.name||c.name]||normalizedCardImages[normalizeCardImageName(displayCard.name||c.name)];
@@ -572,6 +601,12 @@ function makeCard(c,zone,index){
 }
 function renderHand(){
  const box=$("myHand").querySelector(".cards");box.replaceChildren(...hand.map((c,i)=>makeCard(c,"hand",i)));
+}
+function renderSpectatorHands(){
+ for(let slot=0;slot<2;slot++){
+  const box=$("spectatorP"+slot+"Hand").querySelector(".cards");
+  box.replaceChildren(...spectatorHands[slot].map((c,i)=>makeCard(c,"spectatorHand"+slot,i)));
+ }
 }
 function renderOpponentHand(){
  const count=Math.max(0,Number(roomData.handCounts?.[1-mySlot]??0));
@@ -909,11 +944,13 @@ document.querySelectorAll(".zone[data-zone]").forEach(z=>{
  z.addEventListener("dragleave",e=>{if(!z.contains(e.relatedTarget))z.classList.remove("over")});
  z.addEventListener("drop",e=>{e.preventDefault();e.stopPropagation();z.classList.remove("over");try{const d=JSON.parse(e.dataTransfer.getData("text/plain"));handleCardDrop(d.zone,Number(d.index),z.dataset.zone);}catch(err){console.error("カードのドロップに失敗",err);}});
 });
-$("create").onclick=createRoom;$("join").onclick=joinRoom;
+$("create").onclick=createRoom;$("join").onclick=joinRoom;$("watchRoom").onclick=joinAsSpectator;
 $("copyRoom").onclick=()=>navigator.clipboard?.writeText(roomId);
 $("exitRoom").onclick=async()=>{
- if(!roomId||mySlot===undefined||mySlot===null)return;
- if(!confirm("この部屋から退出しますか？"))return;
+ if(!roomId)return;
+ if(!confirm(isSpectator?"観戦を終了しますか？":"この部屋から退出しますか？"))return;
+ if(isSpectator){cleanup();roomId=null;mySlot=null;isSpectator=false;roomData={};hand=[];spectatorHands=[[],[]];$("game").classList.add("hidden");$("lobby").classList.remove("hidden");$("roomInput").value="";msg("観戦を終了しました。");return;}
+ if(mySlot===undefined||mySlot===null)return;
  const leavingRoom=roomId,leavingSlot=mySlot,leavingUid=uid;
  try{
   const changes={};
